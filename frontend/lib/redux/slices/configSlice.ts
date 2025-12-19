@@ -1,0 +1,206 @@
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+
+// --- Types ---
+export interface Role {
+  id: string;
+  name: string;
+  registrationType: 'admin' | 'public';
+}
+
+export interface NavNode {
+  id: string;
+  name: string;
+  type: 'section' | 'page';
+  accessRoles: string[];
+  children: NavNode[];
+}
+
+export interface ConfigState {
+  authType: 'email' | 'username';
+  enable2FA: boolean;
+  database: 'mysql' | 'mongodb';
+  defaultTheme: 'light' | 'dark';
+  roles: Role[];
+  navTree: NavNode[];
+  currentStep: number;
+  editingNodeId: string | null;
+}
+
+const initialState: ConfigState = {
+  authType: 'email',
+  enable2FA: true,
+  database: 'mysql',
+  defaultTheme: 'dark',
+  roles: [
+    { id: 'role_1', name: 'Admin', registrationType: 'admin' },
+    { id: 'role_2', name: 'User', registrationType: 'public' }
+  ],
+  navTree: [
+    { id: 'node_1', name: 'Dashboard', type: 'page', accessRoles: ['role_1', 'role_2'], children: [] },
+    {
+      id: 'node_2',
+      name: 'User Management',
+      type: 'section',
+      accessRoles: ['role_1'],
+      children: [
+        { id: 'node_3', name: 'Bulk Import', type: 'page', accessRoles: ['role_1'], children: [] },
+        { id: 'node_4', name: 'Audit Logs', type: 'page', accessRoles: ['role_1'], children: [] }
+      ]
+    }
+  ],
+  currentStep: 1,
+  editingNodeId: null,
+};
+
+// --- Helper Functions ---
+const findNodeById = (nodes: NavNode[], id: string): NavNode | null => {
+  for (const node of nodes) {
+    if (node.id === id) return node;
+    if (node.children.length > 0) {
+      const found = findNodeById(node.children, id);
+      if (found) return found;
+    }
+  }
+  return null;
+};
+
+const updateNodeInTree = (nodes: NavNode[], id: string, updates: Partial<NavNode>): NavNode[] => {
+  return nodes.map(node => {
+    if (node.id === id) return { ...node, ...updates };
+    if (node.children.length > 0) {
+      return { ...node, children: updateNodeInTree(node.children, id, updates) };
+    }
+    return node;
+  });
+};
+
+const deleteNodeFromTree = (nodes: NavNode[], id: string): NavNode[] => {
+  return nodes.filter(node => node.id !== id).map(node => ({
+    ...node,
+    children: deleteNodeFromTree(node.children, id)
+  }));
+};
+
+const addChildToNode = (nodes: NavNode[], parentId: string | null, newNode: NavNode): NavNode[] => {
+  if (!parentId) return [...nodes, newNode];
+  return nodes.map(node => {
+    if (node.id === parentId) return { ...node, children: [...node.children, newNode] };
+    if (node.children.length > 0) {
+      return { ...node, children: addChildToNode(node.children, parentId, newNode) };
+    }
+    return node;
+  });
+};
+
+const cleanRolesFromTree = (nodes: NavNode[], roleId: string): NavNode[] => {
+  return nodes.map(n => ({
+    ...n,
+    accessRoles: n.accessRoles.filter(rid => rid !== roleId),
+    children: cleanRolesFromTree(n.children, roleId)
+  }));
+};
+
+// --- Slice ---
+const configSlice = createSlice({
+  name: 'config',
+  initialState,
+  reducers: {
+    setAuthType: (state, action: PayloadAction<'email' | 'username'>) => {
+      state.authType = action.payload;
+    },
+    toggle2FA: (state) => {
+      state.enable2FA = !state.enable2FA;
+    },
+    setDatabase: (state, action: PayloadAction<'mysql' | 'mongodb'>) => {
+      state.database = action.payload;
+    },
+    setDefaultTheme: (state, action: PayloadAction<'light' | 'dark'>) => {
+      state.defaultTheme = action.payload;
+    },
+    setCurrentStep: (state, action: PayloadAction<number>) => {
+      state.currentStep = action.payload;
+    },
+    nextStep: (state) => {
+      if (state.currentStep < 4) state.currentStep += 1;
+    },
+    prevStep: (state) => {
+      if (state.currentStep > 1) state.currentStep -= 1;
+    },
+    addRole: (state) => {
+      const newId = `role_${Math.random().toString(36).substr(2, 5)}`;
+      state.roles.push({ id: newId, name: '', registrationType: 'admin' });
+    },
+    updateRole: (state, action: PayloadAction<{ id: string; updates: Partial<Role> }>) => {
+      const index = state.roles.findIndex(r => r.id === action.payload.id);
+      if (index !== -1) {
+        state.roles[index] = { ...state.roles[index], ...action.payload.updates };
+      }
+    },
+    removeRole: (state, action: PayloadAction<string>) => {
+      state.roles = state.roles.filter(r => r.id !== action.payload);
+      state.navTree = cleanRolesFromTree(state.navTree, action.payload);
+    },
+    createNode: (state, action: PayloadAction<{ parentId: string | null; type: 'section' | 'page' }>) => {
+      const { parentId, type } = action.payload;
+      const name = type === 'section' ? 'New Section' : 'New Page';
+      const newNode: NavNode = {
+        id: `node_${Math.random().toString(36).substr(2, 7)}`,
+        name,
+        type,
+        accessRoles: state.roles.map(r => r.id),
+        children: []
+      };
+      state.navTree = addChildToNode(state.navTree, parentId, newNode);
+    },
+    deleteNode: (state, action: PayloadAction<string>) => {
+      state.navTree = deleteNodeFromTree(state.navTree, action.payload);
+      // Clear editing if the deleted node was being edited
+      if (state.editingNodeId === action.payload) {
+        state.editingNodeId = null;
+      }
+    },
+    updateNode: (state, action: PayloadAction<{ id: string; updates: Partial<NavNode> }>) => {
+      state.navTree = updateNodeInTree(state.navTree, action.payload.id, action.payload.updates);
+    },
+    toggleRoleOnNode: (state, action: PayloadAction<{ nodeId: string; roleId: string }>) => {
+      const node = findNodeById(state.navTree, action.payload.nodeId);
+      if (node) {
+        const hasAccess = node.accessRoles.includes(action.payload.roleId);
+        const newRoles = hasAccess
+          ? node.accessRoles.filter(rid => rid !== action.payload.roleId)
+          : [...node.accessRoles, action.payload.roleId];
+        state.navTree = updateNodeInTree(state.navTree, action.payload.nodeId, { accessRoles: newRoles });
+      }
+    },
+    setEditingNodeId: (state, action: PayloadAction<string | null>) => {
+      state.editingNodeId = action.payload;
+    },
+    resetConfig: () => initialState,
+  },
+});
+
+export const {
+  setAuthType,
+  toggle2FA,
+  setDatabase,
+  setDefaultTheme,
+  setCurrentStep,
+  nextStep,
+  prevStep,
+  addRole,
+  updateRole,
+  removeRole,
+  createNode,
+  deleteNode,
+  updateNode,
+  toggleRoleOnNode,
+  setEditingNodeId,
+  resetConfig,
+} = configSlice.actions;
+
+export default configSlice.reducer;
+
+// Helper selector to find a node by ID
+export const selectNodeById = (state: { navTree: NavNode[] }, id: string): NavNode | null => {
+  return findNodeById(state.navTree, id);
+};
