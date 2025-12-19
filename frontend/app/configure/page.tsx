@@ -41,7 +41,10 @@ import {
   FolderPlus,
   MoreVertical,
   ChevronRight as ChevronRightIcon,
-  Folder
+  Folder,
+  Eye,
+  Wand2,
+  Link as LinkIcon
 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import { 
@@ -141,10 +144,10 @@ const Button = ({
   type?: "button" | "submit" | "reset";
 }) => {
   const variants = {
-    primary: "bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm",
-    secondary: "bg-zinc-100 hover:bg-zinc-200 text-zinc-900 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-100",
-    outline: "border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300",
-    danger: "bg-red-50 text-red-600 hover:bg-red-100 border border-red-200"
+    primary: "bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20",
+    secondary: "bg-zinc-100 hover:bg-zinc-200 text-zinc-900 dark:bg-zinc-900 dark:hover:bg-zinc-800 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-800",
+    outline: "border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-900 text-zinc-700 dark:text-zinc-300",
+    danger: "bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400"
   };
 
   return (
@@ -152,7 +155,7 @@ const Button = ({
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium transition-all active:scale-95 disabled:opacity-50 disabled:active:scale-100 ${variants[variant]} ${className}`}
+      className={`flex items-center justify-center gap-2 px-5 py-2.5 rounded font-black text-xs uppercase tracking-[0.15em] transition-all active:scale-95 disabled:opacity-50 disabled:active:scale-100 ${variants[variant]} ${className}`}
     >
       {Icon && <Icon size={18} />}
       {children}
@@ -170,6 +173,8 @@ export default function ConfigurePage() {
   // Local state only for generated code (not persisted)
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [showConfigDebug, setShowConfigDebug] = useState(false);
+  const [theme, setTheme] = useState('dark');
 
   const totalSteps = 4;
 
@@ -273,8 +278,8 @@ export default function ConfigurePage() {
         return (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div>
-              <h2 className="text-2xl font-bold text-zinc-900 dark:text-white">Base Auth Strategy</h2>
-              <p className="text-zinc-500 mt-1">Configure identity methods and advanced security.</p>
+              <h2 className="text-3xl md:text-4xl font-black tracking-tighter uppercase italic text-zinc-900 dark:text-white">Base Auth Strategy</h2>
+              <p className="text-zinc-500 mt-2 text-xs font-bold uppercase tracking-widest">Configure identity methods and advanced security.</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -334,8 +339,8 @@ export default function ConfigurePage() {
         return (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div>
-              <h2 className="text-2xl font-bold text-zinc-900 dark:text-white">Infrastructure & Preferences</h2>
-              <p className="text-zinc-500 mt-1">Database selection and user experience defaults.</p>
+              <h2 className="text-3xl md:text-4xl font-black tracking-tighter uppercase italic text-zinc-900 dark:text-white">Infrastructure & Preferences</h2>
+              <p className="text-zinc-500 mt-2 text-xs font-bold uppercase tracking-widest">Database selection and user experience defaults.</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -390,11 +395,11 @@ export default function ConfigurePage() {
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="flex justify-between items-end">
               <div>
-                <h2 className="text-2xl font-bold text-zinc-900 dark:text-white flex items-center">
+                <h2 className="text-3xl md:text-4xl font-black tracking-tighter uppercase italic text-zinc-900 dark:text-white flex items-center">
                   Role Identity Logic
                   <Tooltip text="Define who can sign up and who must be created by an Admin." />
                 </h2>
-                <p className="text-zinc-500 mt-1">Configure visibility and assignment methods for each role.</p>
+                <p className="text-zinc-500 mt-2 text-xs font-bold uppercase tracking-widest">Configure visibility and assignment methods for each role.</p>
               </div>
               <Button onClick={addRole} icon={Plus} variant="outline">Add Role</Button>
             </div>
@@ -458,11 +463,11 @@ export default function ConfigurePage() {
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="flex justify-between items-start">
               <div className="max-w-md">
-                <h2 className="text-2xl font-bold text-zinc-900 dark:text-white flex items-center">
+                <h2 className="text-3xl md:text-4xl font-black tracking-tighter uppercase italic text-zinc-900 dark:text-white flex items-center">
                   Navigation Architect
                   <Tooltip text="Build a recursive folder-style sidebar structure. Manage role access at any level of the tree." />
                 </h2>
-                <p className="text-zinc-500 mt-1 text-sm">Organize Sections, Sub-sections, and Pages with granular role permissions.</p>
+                <p className="text-zinc-500 mt-2 text-xs font-bold uppercase tracking-widest">Organize Sections, Sub-sections, and Pages with granular role permissions.</p>
               </div>
               <div className="flex gap-2">
                 <Button variant="secondary" icon={FolderPlus} onClick={() => handleCreateNode(null, 'section')}>Add Root Section</Button>
@@ -616,27 +621,44 @@ export default function ConfigurePage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
-      <nav className="border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 sticky top-0 z-50">
-        <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
-              <ShieldCheck size={24} />
+    <div className={`min-h-screen selection:bg-indigo-500/30 transition-colors duration-500 ${theme === 'dark' ? 'bg-zinc-950 text-zinc-100 dark' : 'bg-white text-zinc-900'}`}>
+      <nav className="fixed top-0 w-full z-50 border-b border-zinc-200/50 dark:border-zinc-800/50 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 bg-indigo-600 rounded flex items-center justify-center text-white shadow-lg transform -rotate-3">
+              <ShieldCheck size={18} />
             </div>
-            <span className="font-bold text-2xl tracking-tighter uppercase italic">GRIFFION</span>
+            <span className="font-black text-lg tracking-tighter uppercase italic">Griffion</span>
           </div>
           <div className="flex items-center gap-4 text-xs font-bold uppercase tracking-widest text-zinc-400">
-            <span>Stack Provisioner</span>
-            <div className="flex gap-1">
-              {[1, 2, 3, 4].map(s => (
-                <div key={s} className={`w-3 h-1 rounded-full ${step >= s ? 'bg-indigo-600' : 'bg-zinc-200'}`} />
-              ))}
+            <button 
+              onClick={() => setShowConfigDebug(!showConfigDebug)}
+              className="flex items-center gap-2 px-3 py-1.5 rounded bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors text-xs font-bold uppercase tracking-widest text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+              title="View saved configuration"
+            >
+              <Eye size={14} />
+              <span className="hidden sm:inline">Config</span>
+            </button>
+            <button 
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="p-2 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+              title="Toggle theme"
+            >
+              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">Step {step}/4</span>
+              <div className="flex gap-1">
+                {[1, 2, 3, 4].map(s => (
+                  <div key={s} className={`w-2 h-2 rounded-full transition-colors ${step >= s ? 'bg-indigo-600' : 'bg-zinc-300 dark:bg-zinc-700'}`} />
+                ))}
+              </div>
             </div>
           </div>
         </div>
       </nav>
 
-      <main className="max-w-3xl mx-auto px-4 py-12">
+      <main className="max-w-4xl mx-auto px-6 pt-32 pb-20">
         <div className="mb-12">
           {renderStep()}
         </div>
@@ -668,9 +690,9 @@ export default function ConfigurePage() {
         </div>
       </main>
 
-      <div className="fixed inset-0 pointer-events-none -z-10 opacity-30">
-        <div className="absolute top-[20%] left-[10%] w-[30%] h-[30%] bg-indigo-500/20 blur-[150px] rounded-full" />
-        <div className="absolute bottom-[20%] right-[10%] w-[30%] h-[30%] bg-blue-500/20 blur-[150px] rounded-full" />
+      <div className="fixed inset-0 pointer-events-none -z-10">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-500/10 blur-[120px] rounded-full" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/10 blur-[120px] rounded-full" />
       </div>
     </div>
   );
