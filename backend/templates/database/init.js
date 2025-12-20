@@ -1,4 +1,4 @@
-// Griffion Backend - Database Initialization
+// Griffion Backend Template - Database Initialization
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 
@@ -35,48 +35,48 @@ async function seedDatabase() {
   try {
     // Seed Roles
     console.log('  📝 Creating roles...');
-    
-    const adminRole = await prisma.role.create({
-      data: {
-        name: 'Admin',
-        description: 'System Administrator',
-        registrationType: 'admin',
-        isSystemRole: true,
-        permissions: JSON.stringify(['*'])
-      }
-    });
-
-    await prisma.role.create({
-      data: {
-        name: 'User',
-        description: 'Standard User',
-        registrationType: 'public',
-        isSystemRole: true,
-        permissions: JSON.stringify(['read:own'])
-      }
-    });
+    __ROLES_SEED__
 
     // Seed Admin User
     console.log('  👤 Creating admin user...');
-    const hashedPassword = await bcrypt.hash('Admin123!', 12);
+    const adminRole = await prisma.role.findUnique({
+      where: { name: '__DEFAULT_ADMIN_ROLE__' }
+    });
+
+    if (!adminRole) {
+      throw new Error('Admin role not found. Cannot create admin user.');
+    }
+
+    const hashedPassword = await bcrypt.hash('__ADMIN_PASSWORD__', 12);
     
     const adminData = {
-      email: 'admin@griffion.local',
+      email: '__ADMIN_EMAIL__',
       password: hashedPassword,
-      firstName: 'System',
-      lastName: 'Administrator',
+      firstName: '__ADMIN_FIRST_NAME__',
+      lastName: '__ADMIN_LAST_NAME__',
       emailVerified: true,
       mfaEnabled: false,
       roleId: adminRole.id
     };
     
+    __USERNAME_FIELD_ASSIGN__
+    
     await prisma.user.create({ data: adminData });
+
+    // Seed Navigation Nodes
+    __NAVIGATION_SEED__
 
     console.log('✅ Database seeded successfully');
   } catch (error) {
     console.error('❌ Seeding failed:', error);
     throw error;
   }
+}
+
+// Helper function to handle JSON fields (SQLite stores as string)
+function jsonField(value) {
+  if (typeof value === 'string') return value;
+  return JSON.stringify(value);
 }
 
 async function closeDatabase() {
