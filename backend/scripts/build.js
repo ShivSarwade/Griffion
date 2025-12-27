@@ -32,8 +32,10 @@ async function build() {
     { src: 'src/server.js', dest: 'server.js' },
     { src: 'src/routes/auth.js', dest: 'routes/auth.js' },
     { src: 'src/routes/admin.js', dest: 'routes/admin.js' },
+    { src: 'src/routes/navigation.js', dest: 'routes/navigation.js' },
     { src: 'src/controllers/authController.js', dest: 'controllers/authController.js' },
     { src: 'src/controllers/adminController.js', dest: 'controllers/adminController.js' },
+    { src: 'src/controllers/navigationController.js', dest: 'controllers/navigationController.js' },
     { src: 'src/middleware/auth.js', dest: 'middleware/auth.js' },
     { src: 'src/middleware/errorHandler.js', dest: 'middleware/errorHandler.js' },
     { src: 'src/middleware/rateLimiter.js', dest: 'middleware/rateLimiter.js' },
@@ -68,7 +70,6 @@ async function build() {
     },
     dependencies: {
       express: '^4.18.2',
-      sqlite3: '^5.1.7',
       bcryptjs: '^2.4.3',
       jsonwebtoken: '^9.0.2',
       helmet: '^7.1.0',
@@ -166,6 +167,10 @@ This is a production-ready build of the Griffion authentication backend.
 - GET \`/api/admin/audit-logs\` - View audit logs
 - GET \`/api/admin/stats\` - System statistics
 
+### Navigation
+- GET \`/api/navigation/menu\` - Get role-based navigation tree
+- GET \`/api/navigation/public\` - Get public navigation nodes
+
 ## 🛡️ Security Features
 
 - JWT authentication
@@ -187,7 +192,6 @@ This is a production-ready build of the Griffion authentication backend.
   const gitignore = `node_modules/
 .env
 *.db
-*.sqlite
 *.log
 .DS_Store
 Thumbs.db

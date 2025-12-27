@@ -122,7 +122,7 @@ router.patch('/me/preferences', authMiddleware, async (req, res) => {
       select: { preferences: true }
     });
 
-    // Parse existing preferences if stored as string (SQLite)
+    // Parse existing preferences if stored as string
     let existingPreferences = {};
     if (currentUser.preferences) {
       existingPreferences = typeof currentUser.preferences === 'string' 
@@ -136,7 +136,7 @@ router.patch('/me/preferences', authMiddleware, async (req, res) => {
       ...preferences
     };
 
-    // Stringify for SQLite compatibility
+    // Stringify preferences
     const preferencesData = JSON.stringify(mergedPreferences);
 
     const updatedUser = await prisma.user.update({

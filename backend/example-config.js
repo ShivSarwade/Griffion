@@ -152,7 +152,7 @@ const exampleConfig = {
 // ========== Minimal Configuration Example ==========
 const minimalConfig = {
   projectName: 'Simple App',
-  dbProvider: 'sqlite', // SQLite needs no additional DB config
+  dbProvider: 'mysql'
   primaryIdentifier: 'email',
   enable2FA: false,
   enablePasswordRecovery: false,

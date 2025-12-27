@@ -1,0 +1,140 @@
+{
+  "info": {
+    "name": "Griffion Backend Generation Tests",
+    "description": "Test endpoints for generating custom backends. Supports MySQL and MongoDB only.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Preview Configuration",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"projectName\": \"Test Application\",\n  \"projectDescription\": \"A test backend\",\n  \"author\": \"Developer\",\n  \"port\": 5000,\n  \"frontendUrl\": \"http://localhost:3000\",\n  \"dbProvider\": \"mysql\",\n  \"primaryIdentifier\": \"email\",\n  \"enable2FA\": true,\n  \"enablePasswordRecovery\": true,\n  \"enableAdminPanel\": true,\n  \"enableRBAC\": true,\n  \"enableGroups\": false,\n  \"enableNavigation\": true,\n  \"adminEmail\": \"admin@test.local\",\n  \"adminPassword\": \"TestAdmin123!\",\n  \"roles\": [\n    {\n      \"name\": \"Admin\",\n      \"description\": \"System Administrator\",\n      \"registrationType\": \"admin\",\n      \"isSystemRole\": true,\n      \"permissions\": [\"*\"]\n    },\n    {\n      \"name\": \"User\",\n      \"description\": \"Standard User\",\n      \"registrationType\": \"public\",\n      \"isSystemRole\": false,\n      \"permissions\": [\"profile.read\", \"profile.update\"]\n    }\n  ],\n  \"navigationTree\": [\n    {\n      \"id\": \"dashboard\",\n      \"name\": \"Dashboard\",\n      \"type\": \"page\",\n      \"path\": \"/dashboard\",\n      \"icon\": \"dashboard\",\n      \"isPublic\": false,\n      \"order\": 0,\n      \"accessRoles\": [\"Admin\", \"User\"]\n    },\n    {\n      \"id\": \"admin_section\",\n      \"name\": \"Administration\",\n      \"type\": \"section\",\n      \"icon\": \"settings\",\n      \"isPublic\": false,\n      \"order\": 1,\n      \"accessRoles\": [\"Admin\"],\n      \"children\": [\n        {\n          \"id\": \"users\",\n          \"name\": \"User Management\",\n          \"type\": \"page\",\n          \"path\": \"/admin/users\",\n          \"icon\": \"users\",\n          \"isPublic\": false,\n          \"order\": 0,\n          \"accessRoles\": [\"Admin\"]\n        },\n        {\n          \"id\": \"audit_logs\",\n          \"name\": \"Audit Logs\",\n          \"type\": \"page\",\n          \"path\": \"/admin/logs\",\n          \"icon\": \"file-text\",\n          \"isPublic\": false,\n          \"order\": 1,\n          \"accessRoles\": [\"Admin\"]\n        }\n      ]\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "http://localhost:5000/api/download/preview",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5000",
+          "path": [
+            "api",
+            "download",
+            "preview"
+          ]
+        },
+        "description": "Preview the configuration without generating/downloading"
+      },
+      "response": []
+    },
+    {
+      "name": "Generate Backend (Full Download)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"projectName\": \"My Custom Backend\",\n  \"projectDescription\": \"Custom authentication backend\",\n  \"author\": \"Your Name\",\n  \"port\": 5000,\n  \"frontendUrl\": \"http://localhost:3000\",\n  \"dbProvider\": \"mysql\",\n  \"primaryIdentifier\": \"email\",\n  \"enable2FA\": true,\n  \"enablePasswordRecovery\": true,\n  \"enableAdminPanel\": true,\n  \"enableRBAC\": true,\n  \"enableGroups\": false,\n  \"enableNavigation\": true,\n  \"adminEmail\": \"admin@myapp.com\",\n  \"adminPassword\": \"SecurePass123!\",\n  \"adminFirstName\": \"Admin\",\n  \"adminLastName\": \"User\",\n  \"roles\": [\n    {\n      \"name\": \"Admin\",\n      \"description\": \"System Administrator with full access\",\n      \"registrationType\": \"admin\",\n      \"isSystemRole\": true,\n      \"permissions\": [\"*\"]\n    },\n    {\n      \"name\": \"Manager\",\n      \"description\": \"Department Manager\",\n      \"registrationType\": \"admin\",\n      \"isSystemRole\": false,\n      \"permissions\": [\"users.read\", \"reports.read\"]\n    },\n    {\n      \"name\": \"User\",\n      \"description\": \"Standard User\",\n      \"registrationType\": \"public\",\n      \"isSystemRole\": false,\n      \"permissions\": [\"profile.read\", \"profile.update\"]\n    }\n  ],\n  \"navigationTree\": [\n    {\n      \"id\": \"dashboard\",\n      \"name\": \"Dashboard\",\n      \"type\": \"page\",\n      \"path\": \"/dashboard\",\n      \"icon\": \"dashboard\",\n      \"isPublic\": false,\n      \"order\": 0,\n      \"accessRoles\": [\"Admin\", \"Manager\", \"User\"]\n    },\n    {\n      \"id\": \"admin_section\",\n      \"name\": \"Administration\",\n      \"type\": \"section\",\n      \"icon\": \"settings\",\n      \"isPublic\": false,\n      \"order\": 1,\n      \"accessRoles\": [\"Admin\", \"Manager\"],\n      \"children\": [\n        {\n          \"id\": \"users\",\n          \"name\": \"User Management\",\n          \"type\": \"page\",\n          \"path\": \"/admin/users\",\n          \"icon\": \"users\",\n          \"isPublic\": false,\n          \"order\": 0,\n          \"accessRoles\": [\"Admin\"]\n        },\n        {\n          \"id\": \"audit_logs\",\n          \"name\": \"Audit Logs\",\n          \"type\": \"page\",\n          \"path\": \"/admin/logs\",\n          \"icon\": \"file-text\",\n          \"isPublic\": false,\n          \"order\": 1,\n          \"accessRoles\": [\"Admin\"]\n        }\n      ]\n    },\n    {\n      \"id\": \"billing\",\n      \"name\": \"Billing\",\n      \"type\": \"page\",\n      \"path\": \"/billing\",\n      \"icon\": \"credit-card\",\n      \"isPublic\": false,\n      \"order\": 2,\n      \"accessRoles\": [\"Admin\", \"Manager\"]\n    },\n    {\n      \"id\": \"settings\",\n      \"name\": \"Settings\",\n      \"type\": \"page\",\n      \"path\": \"/settings\",\n      \"icon\": \"settings\",\n      \"isPublic\": false,\n      \"order\": 3,\n      \"accessRoles\": [\"Admin\", \"Manager\", \"User\"]\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "http://localhost:5000/api/download/generate",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5000",
+          "path": [
+            "api",
+            "download",
+            "generate"
+          ]
+        },
+        "description": "Generate and download a complete backend ZIP file. This will:\n1. Generate backend from template\n2. Replace all tokens with your config\n3. Create a ZIP file\n4. Download it\n5. Cleanup temp files\n\n**Note:** In Postman, the file will download. Save it to test."
+      },
+      "response": []
+    },
+    {
+      "name": "Generate Backend - MySQL Simple",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"projectName\": \"Simple App\",\n  \"dbProvider\": \"mysql\",\n  \"primaryIdentifier\": \"email\",\n  \"enable2FA\": false,\n  \"enablePasswordRecovery\": true,\n  \"enableAdminPanel\": true,\n  \"enableRBAC\": false,\n  \"enableGroups\": false,\n  \"enableNavigation\": false,\n  \"adminEmail\": \"admin@example.com\",\n  \"adminPassword\": \"Admin123!\",\n  \"roles\": [\n    {\n      \"name\": \"Admin\",\n      \"description\": \"Administrator\",\n      \"registrationType\": \"admin\",\n      \"permissions\": [\"*\"]\n    },\n    {\n      \"name\": \"User\",\n      \"description\": \"Regular User\",\n      \"registrationType\": \"public\",\n      \"permissions\": []\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "http://localhost:5000/api/download/generate",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5000",
+          "path": [
+            "api",
+            "download",
+            "generate"
+          ]
+        },
+        "description": "Minimal configuration with MySQL database"
+      },
+      "response": []
+    },
+    {
+      "name": "Generate Backend - MongoDB",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"projectName\": \"MongoDB Backend\",\n  \"projectDescription\": \"Backend with MongoDB\",\n  \"author\": \"Developer\",\n  \"port\": 5000,\n  \"frontendUrl\": \"http://localhost:3000\",\n  \"dbProvider\": \"mongodb\",\n  \"primaryIdentifier\": \"email\",\n  \"enable2FA\": true,\n  \"enablePasswordRecovery\": true,\n  \"enableAdminPanel\": true,\n  \"enableRBAC\": true,\n  \"enableGroups\": true,\n  \"enableNavigation\": true,\n  \"adminEmail\": \"admin@mongo.com\",\n  \"adminPassword\": \"Admin123!\",\n  \"adminFirstName\": \"Mongo\",\n  \"adminLastName\": \"Admin\",\n  \"roles\": [\n    {\n      \"name\": \"Admin\",\n      \"description\": \"System Administrator\",\n      \"registrationType\": \"admin\",\n      \"isSystemRole\": true,\n      \"permissions\": [\"*\"]\n    },\n    {\n      \"name\": \"User\",\n      \"description\": \"Standard User\",\n      \"registrationType\": \"public\",\n      \"isSystemRole\": false,\n      \"permissions\": [\"profile.read\", \"profile.update\"]\n    }\n  ],\n  \"navigationTree\": [\n    {\n      \"id\": \"dashboard\",\n      \"name\": \"Dashboard\",\n      \"type\": \"page\",\n      \"path\": \"/dashboard\",\n      \"icon\": \"dashboard\",\n      \"isPublic\": false,\n      \"order\": 0,\n      \"accessRoles\": [\"Admin\", \"User\"]\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "http://localhost:5000/api/download/generate",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5000",
+          "path": [
+            "api",
+            "download",
+            "generate"
+          ]
+        },
+        "description": "Full configuration with MongoDB database"
+      },
+      "response": []
+    }
+  ]
+}

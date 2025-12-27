@@ -703,22 +703,64 @@ const forcePasswordChange = async (req, res) => {
  */
 const getAllRoles = async (req, res) => {
   try {
+    // ADMIN API: Fetch ALL roles (no user context filtering)
     const roles = await prisma.role.findMany({
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        registrationType: true,
-        isSystemRole: true,
-        permissions: true,
-        createdAt: true
+      include: {
+        navigationNodes: {
+          select: {
+            id: true,
+            name: true,
+            type: true,
+            path: true,
+            icon: true,
+            isPublic: true,
+            order: true,
+            parentId: true
+          },
+          orderBy: { order: 'asc' }
+        }
       },
       orderBy: { name: 'asc' }
     });
 
+    // Fetch ALL navigation pages with ALL role assignments
+    const allNavigation = await prisma.navigationNode.findMany({
+      include: {
+        accessRoles: {
+          select: {
+            id: true,
+            name: true
+          }
+        }
+      },
+      orderBy: { order: 'asc' }
+    });
+
     res.json({
       success: true,
-      data: roles
+      data: {
+        roles: roles.map(role => ({
+          id: role.id,
+          name: role.name,
+          description: role.description,
+          registrationType: role.registrationType,
+          isSystemRole: role.isSystemRole,
+          permissions: role.permissions,
+          createdAt: role.createdAt,
+          navigationPages: role.navigationNodes
+        })),
+        allNavigationPages: allNavigation.map(nav => ({
+          id: nav.id,
+          name: nav.name,
+          type: nav.type,
+          path: nav.path,
+          icon: nav.icon,
+          isPublic: nav.isPublic,
+          order: nav.order,
+          parentId: nav.parentId,
+          assignedToRoles: nav.accessRoles
+        }))
+      }
     });
   } catch (error) {
     console.error('Get roles error:', error);
@@ -849,6 +891,240 @@ const createBulkUsers = async (req, res) => {
   }
 };
 
+/**
+ * Create a new role with navigation assignments
+ */
+const createRole = async (req, res) => {
+  try {
+    const { name, description, registrationType, permissions, navigationPageIds } = req.body;
+
+    // Validation
+    if (!name) {
+      return res.status(400).json({ success: false, message: 'Role name is required' });
+    }
+
+    // Check if role already exists
+    const existingRole = await prisma.role.findUnique({
+      where: { name }
+    });
+
+    if (existingRole) {
+      return res.status(400).json({ success: false, message: 'Role with this name already exists' });
+    }
+
+    // Create role with navigation assignments
+    const roleData = {
+      name,
+      description: description || '',
+      registrationType: registrationType || 'admin',
+      isSystemRole: false,
+      permissions: permissions || []
+    };
+
+    // Add navigation connections if provided
+    if (navigationPageIds && Array.isArray(navigationPageIds) && navigationPageIds.length > 0) {
+      roleData.navigationNodes = {
+        connect: navigationPageIds.map(id => ({ id }))
+      };
+    }
+
+    const newRole = await prisma.role.create({
+      data: roleData,
+      include: {
+        navigationNodes: {
+          select: {
+            id: true,
+            name: true,
+            type: true,
+            path: true
+          }
+        }
+      }
+    });
+
+    // Audit log
+    await createAuditLog({
+      userId: req.user.id,
+      action: 'CREATE_ROLE',
+      resource: 'Role',
+      resourceId: newRole.id,
+      details: { name: newRole.name, navigationPages: navigationPageIds?.length || 0 }
+    });
+
+    res.status(201).json({
+      success: true,
+      data: newRole,
+      message: 'Role created successfully'
+    });
+  } catch (error) {
+    console.error('Create role error:', error);
+    res.status(500).json({ success: false, message: 'Failed to create role' });
+  }
+};
+
+/**
+ * Update an existing role and its navigation assignments
+ */
+const updateRole = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, description, registrationType, permissions, navigationPageIds } = req.body;
+
+    // Check if role exists
+    const existingRole = await prisma.role.findUnique({
+      where: { id }
+    });
+
+    if (!existingRole) {
+      return res.status(404).json({ success: false, message: 'Role not found' });
+    }
+
+    // Prevent updating system roles' core properties
+    if (existingRole.isSystemRole && (name || registrationType)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Cannot modify name or registration type of system roles' 
+      });
+    }
+
+    // Check for name conflicts if name is being changed
+    if (name && name !== existingRole.name) {
+      const nameConflict = await prisma.role.findUnique({
+        where: { name }
+      });
+      if (nameConflict) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Another role with this name already exists' 
+        });
+      }
+    }
+
+    // Build update data
+    const updateData = {};
+    if (name) updateData.name = name;
+    if (description !== undefined) updateData.description = description;
+    if (registrationType) updateData.registrationType = registrationType;
+    if (permissions) updateData.permissions = permissions;
+
+    // Handle navigation pages update
+    if (navigationPageIds !== undefined) {
+      // First, disconnect all existing navigation nodes
+      await prisma.role.update({
+        where: { id },
+        data: {
+          navigationNodes: {
+            set: [] // Clear all connections
+          }
+        }
+      });
+
+      // Then connect the new ones
+      if (Array.isArray(navigationPageIds) && navigationPageIds.length > 0) {
+        updateData.navigationNodes = {
+          connect: navigationPageIds.map(nodeId => ({ id: nodeId }))
+        };
+      }
+    }
+
+    // Update role
+    const updatedRole = await prisma.role.update({
+      where: { id },
+      data: updateData,
+      include: {
+        navigationNodes: {
+          select: {
+            id: true,
+            name: true,
+            type: true,
+            path: true
+          }
+        }
+      }
+    });
+
+    // Audit log
+    await createAuditLog({
+      userId: req.user.id,
+      action: 'UPDATE_ROLE',
+      resource: 'Role',
+      resourceId: id,
+      details: { 
+        updates: Object.keys(updateData),
+        navigationPages: navigationPageIds?.length || 0
+      }
+    });
+
+    res.json({
+      success: true,
+      data: updatedRole,
+      message: 'Role updated successfully'
+    });
+  } catch (error) {
+    console.error('Update role error:', error);
+    res.status(500).json({ success: false, message: 'Failed to update role' });
+  }
+};
+
+/**
+ * Delete a role and remove all navigation assignments
+ */
+const deleteRole = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check if role exists
+    const role = await prisma.role.findUnique({
+      where: { id },
+      include: {
+        users: true
+      }
+    });
+
+    if (!role) {
+      return res.status(404).json({ success: false, message: 'Role not found' });
+    }
+
+    // Prevent deleting system roles
+    if (role.isSystemRole) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Cannot delete system roles' 
+      });
+    }
+
+    // Check if role has users
+    if (role.users.length > 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Cannot delete role. ${role.users.length} user(s) still assigned to this role.` 
+      });
+    }
+
+    // Delete role (navigation assignments are automatically removed due to Prisma relation)
+    await prisma.role.delete({
+      where: { id }
+    });
+
+    // Audit log
+    await createAuditLog({
+      userId: req.user.id,
+      action: 'DELETE_ROLE',
+      resource: 'Role',
+      resourceId: id,
+      details: { name: role.name }
+    });
+
+    res.json({
+      success: true,
+      message: 'Role deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete role error:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete role' });
+  }
+};
+
 module.exports = {
   getUsers,
   createUser,
@@ -861,5 +1137,8 @@ module.exports = {
   bulkCreateUsers,
   forcePasswordChange,
   getAllRoles,
+  createRole,
+  updateRole,
+  deleteRole,
   createBulkUsers
 };

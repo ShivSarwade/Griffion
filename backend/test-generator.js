@@ -18,8 +18,8 @@ const testConfig = {
   port: 5000,
   frontendUrl: 'http://localhost:3000',
 
-  // Database - Change to 'mysql', 'postgresql', 'mongodb', or 'sqlite'
-  dbProvider: 'mysql',  // Options: 'mysql', 'mongodb', 'postgresql', 'sqlite'
+  // Database - Change to 'mysql' or 'mongodb'
+  dbProvider: 'mysql',  // Options: 'mysql', 'mongodb'
 
   // Authentication
   primaryIdentifier: 'email',
@@ -78,6 +78,7 @@ const testConfig = {
   ],
 
   // Navigation Tree
+  // accessRoles uses role names - the generator will convert them to role IDs during seed
   navigationTree: [
     {
       id: 'dashboard',
@@ -86,7 +87,8 @@ const testConfig = {
       path: '/dashboard',
       icon: 'dashboard',
       isPublic: false,
-      order: 0
+      order: 0,
+      accessRoles: ['Admin', 'Manager', 'User']  // Role names
     },
     {
       id: 'admin_section',
@@ -95,6 +97,7 @@ const testConfig = {
       icon: 'settings',
       isPublic: false,
       order: 1,
+      accessRoles: ['Admin', 'Manager'],
       children: [
         {
           id: 'users',
@@ -103,7 +106,8 @@ const testConfig = {
           path: '/admin/users',
           icon: 'users',
           isPublic: false,
-          order: 0
+          order: 0,
+          accessRoles: ['Admin', 'Manager']
         },
         {
           id: 'audit_logs',
@@ -112,7 +116,8 @@ const testConfig = {
           path: '/admin/logs',
           icon: 'file-text',
           isPublic: false,
-          order: 1
+          order: 1,
+          accessRoles: ['Admin']
         }
       ]
     }

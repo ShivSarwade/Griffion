@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "griffion-complete-api-2025",
     "name": "Griffion - Complete API Collection",
-    "description": "Complete API test collection for Griffion-generated backends. Includes Authentication (with 2FA), Admin Panel, User Management, Roles, Groups, Navigation, and bulk operations.",
+    "description": "Complete API test collection for Griffion-generated backends. Includes Authentication (with 2FA), Admin Panel, User Management, Roles, Navigation, Audit Logs, and Password Recovery.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "38324795"
   },
@@ -860,14 +860,14 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/users/profile",
+              "raw": "{{baseUrl}}/api/users/me",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
                 "users",
-                "profile"
+                "me"
               ]
             },
             "description": "Get current user's profile information."
@@ -896,17 +896,17 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Updated\",\n  \"phone\": \"+1234567890\",\n  \"profilePicture\": \"https://example.com/photo.jpg\"\n}"
+              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Updated\",\n  \"phone\": \"+1234567890\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/users/profile",
+              "raw": "{{baseUrl}}/api/users/me",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
                 "users",
-                "profile"
+                "me"
               ]
             },
             "description": "Update current user's profile information."
@@ -938,47 +938,18 @@
               "raw": "{\n  \"currentPassword\": \"TestAdmin123!\",\n  \"newPassword\": \"NewSecurePass123!\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/users/change-password",
+              "raw": "{{baseUrl}}/api/users/me/change-password",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
                 "users",
+                "me",
                 "change-password"
               ]
             },
             "description": "Change current user's password. Requires current password."
-          },
-          "response": []
-        },
-        {
-          "name": "Get User Preferences",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/users/preferences",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "users",
-                "preferences"
-              ]
-            },
-            "description": "Get user's preferences and settings."
           },
           "response": []
         },
@@ -995,7 +966,7 @@
                 }
               ]
             },
-            "method": "PUT",
+            "method": "PATCH",
             "header": [
               {
                 "key": "Content-Type",
@@ -1007,13 +978,14 @@
               "raw": "{\n  \"preferences\": {\n    \"theme\": \"dark\",\n    \"language\": \"en\",\n    \"notifications\": true,\n    \"emailNotifications\": true\n  }\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/users/preferences",
+              "raw": "{{baseUrl}}/api/users/me/preferences",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
                 "users",
+                "me",
                 "preferences"
               ]
             },
@@ -1028,6 +1000,25 @@
       "item": [
         {
           "name": "Get All Roles",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.data && jsonData.data.length > 0) {",
+                  "        jsonData.data.forEach(role => {",
+                  "            pm.environment.set('roleId_' + role.name, role.id);",
+                  "        });",
+                  "        console.log('✓ Role IDs saved to environment');",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "auth": {
               "type": "bearer",
@@ -1137,6 +1128,17 @@
         },
         {
           "name": "Create Single User (Admin)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.environment.set('uniqueEmail', 'user' + Date.now() + '@example.com');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "auth": {
               "type": "bearer",
@@ -1157,7 +1159,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"newadminuser@example.com\",\n  \"password\": \"TempPassword123!\",\n  \"firstName\": \"Admin\",\n  \"lastName\": \"User\",\n  \"roleId\": \"role-admin-id\"\n}"
+              "raw": "{\n  \"email\": \"{{uniqueEmail}}\",\n  \"password\": \"TempPassword123!\",\n  \"firstName\": \"Admin\",\n  \"lastName\": \"User\",\n  \"roleId\": \"{{roleId_User}}\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/admin/users",
@@ -1170,12 +1172,26 @@
                 "users"
               ]
             },
-            "description": "Create single user as admin. Can assign any role (admin, public, etc.). Email with login credentials will be sent."
+            "description": "Create single user as admin. Uses User role from environment. Auto-generates unique email to avoid duplicates. Run 'Get All Roles' first."
           },
           "response": []
         },
         {
           "name": "Create Bulk Users (With Emails)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const timestamp = Date.now();",
+                  "pm.environment.set('bulkEmail1', 'user1_' + timestamp + '@example.com');",
+                  "pm.environment.set('bulkEmail2', 'user2_' + timestamp + '@example.com');",
+                  "pm.environment.set('bulkEmail3', 'seller1_' + timestamp + '@example.com');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "auth": {
               "type": "bearer",
@@ -1196,7 +1212,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"users\": [\n    {\n      \"email\": \"user1@example.com\",\n      \"password\": \"TempPass123!\",\n      \"firstName\": \"User\",\n      \"lastName\": \"One\",\n      \"roleId\": \"role-user-id\"\n    },\n    {\n      \"email\": \"user2@example.com\",\n      \"password\": \"TempPass123!\",\n      \"firstName\": \"User\",\n      \"lastName\": \"Two\",\n      \"roleId\": \"role-user-id\"\n    },\n    {\n      \"email\": \"seller1@example.com\",\n      \"password\": \"TempPass123!\",\n      \"firstName\": \"Seller\",\n      \"lastName\": \"One\",\n      \"roleId\": \"role-seller-id\"\n    }\n  ]\n}"
+              "raw": "{\n  \"users\": [\n    {\n      \"email\": \"{{bulkEmail1}}\",\n      \"password\": \"TempPass123!\",\n      \"firstName\": \"User\",\n      \"lastName\": \"One\",\n      \"roleId\": \"{{roleId_User}}\"\n    },\n    {\n      \"email\": \"{{bulkEmail2}}\",\n      \"password\": \"TempPass123!\",\n      \"firstName\": \"User\",\n      \"lastName\": \"Two\",\n      \"roleId\": \"{{roleId_User}}\"\n    },\n    {\n      \"email\": \"{{bulkEmail3}}\",\n      \"password\": \"TempPass123!\",\n      \"firstName\": \"Seller\",\n      \"lastName\": \"One\",\n      \"roleId\": \"{{roleId_Seller}}\"\n    }\n  ]\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/admin/users/bulk",
@@ -1210,7 +1226,7 @@
                 "bulk"
               ]
             },
-            "description": "Create up to 100 users at once. Each user receives welcome email with login credentials and instructions to change password on first login."
+            "description": "Create up to 100 users at once. Auto-generates unique emails to avoid duplicates. Uses roleId_User and roleId_Seller from environment. Run 'Get All Roles' first. Note: Email notifications may fail but users will still be created."
           },
           "response": []
         },
@@ -1236,7 +1252,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"firstName\": \"Updated\",\n  \"lastName\": \"Name\",\n  \"roleId\": \"role-new-id\",\n  \"isActive\": true,\n  \"isLocked\": false\n}"
+              "raw": "{\n  \"firstName\": \"Updated\",\n  \"lastName\": \"Name\",\n  \"isActive\": true,\n  \"isLocked\": false\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/admin/users/{{userId}}",
@@ -1250,7 +1266,7 @@
                 "{{userId}}"
               ]
             },
-            "description": "Update user details as admin. Can change role, lock/unlock account."
+            "description": "Update user details as admin. Can change role (use roleId_RoleName), lock/unlock account. Remove roleId to keep current role."
           },
           "response": []
         },
@@ -1342,7 +1358,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Moderator\",\n  \"description\": \"Community moderator with limited admin powers\",\n  \"registrationType\": \"admin\",\n  \"permissions\": [\n    \"user:read\",\n    \"content:moderate\",\n    \"report:view\"\n  ]\n}"
+              "raw": "{\n  \"name\": \"Moderator\",\n  \"description\": \"Community moderator with limited admin powers\",\n  \"registrationType\": \"admin\",\n  \"permissions\": [\"user.read\", \"content.moderate\", \"report.view\"],\n  \"navigationPageIds\": []\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/admin/roles",
@@ -1355,7 +1371,7 @@
                 "roles"
               ]
             },
-            "description": "Create new role. registrationType='public' allows self-registration, 'admin' requires admin to create users."
+            "description": "Create new role with navigation assignments. registrationType='public' allows self-registration, 'admin' requires admin to create users. navigationPageIds is an array of navigation node IDs this role can access."
           },
           "response": []
         },
@@ -1381,7 +1397,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"description\": \"Updated description\",\n  \"permissions\": [\n    \"user:read\",\n    \"user:write\",\n    \"content:moderate\"\n  ]\n}"
+              "raw": "{\n  \"description\": \"Updated description\",\n  \"permissions\": [\"user.read\", \"user.write\", \"content.moderate\"],\n  \"navigationPageIds\": []\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/admin/roles/{{roleId}}",
@@ -1395,7 +1411,7 @@
                 "{{roleId}}"
               ]
             },
-            "description": "Update role permissions and description."
+            "description": "Update role permissions, description, and navigation assignments. Pass navigationPageIds to update which pages this role can access."
           },
           "response": []
         },
@@ -1433,155 +1449,7 @@
       ]
     },
     {
-      "name": "5. Admin - Groups",
-      "item": [
-        {
-          "name": "Get All Groups",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/admin/groups",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "admin",
-                "groups"
-              ]
-            },
-            "description": "Get all user groups."
-          },
-          "response": []
-        },
-        {
-          "name": "Create Group",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Sellers Group\",\n  \"description\": \"All users with seller role\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/admin/groups",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "admin",
-                "groups"
-              ]
-            },
-            "description": "Create new user group."
-          },
-          "response": []
-        },
-        {
-          "name": "Add User to Group",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"userId\": \"{{userId}}\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/admin/groups/{{groupId}}/members",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "admin",
-                "groups",
-                "{{groupId}}",
-                "members"
-              ]
-            },
-            "description": "Add user to group."
-          },
-          "response": []
-        },
-        {
-          "name": "Remove User from Group",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/admin/groups/{{groupId}}/members/{{userId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "admin",
-                "groups",
-                "{{groupId}}",
-                "members",
-                "{{userId}}"
-              ]
-            },
-            "description": "Remove user from group."
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "6. Admin - Audit & Statistics",
+      "name": "5. Admin - Audit & Statistics",
       "item": [
         {
           "name": "Get Audit Logs",
@@ -1657,14 +1525,14 @@
                 "statistics"
               ]
             },
-            "description": "Get system statistics (total users, roles, groups, etc.)"
+            "description": "Get system statistics (total users, roles, etc.)"
           },
           "response": []
         }
       ]
     },
     {
-      "name": "7. Navigation & Settings",
+      "name": "6. Navigation & Settings",
       "item": [
         {
           "name": "Get Navigation Menu",
@@ -1682,13 +1550,14 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/navigation",
+              "raw": "{{baseUrl}}/api/navigation/menu",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
-                "navigation"
+                "navigation",
+                "menu"
               ]
             },
             "description": "Get dynamic navigation menu based on user role and permissions."
@@ -1720,7 +1589,7 @@
       ]
     },
     {
-      "name": "8. Password Recovery",
+      "name": "7. Password Recovery",
       "item": [
         {
           "name": "Request Password Reset",
@@ -1817,11 +1686,6 @@
     },
     {
       "key": "roleId",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "groupId",
       "value": "",
       "type": "string"
     }

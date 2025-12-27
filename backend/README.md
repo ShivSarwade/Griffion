@@ -13,7 +13,7 @@ A secure, production-ready authentication microservice built with Node.js and Ex
 - ✅ Audit logging
 - ✅ Rate limiting
 - ✅ Admin panel APIs
-- ✅ SQLite database (easily switchable)
+- ✅ MySQL/MongoDB database support
 
 ## Quick Start
 
@@ -121,7 +121,7 @@ See `.env.example` for all available configuration options.
 
 ## Database
 
-By default, uses SQLite for easy setup. The database is created automatically at `./data/auth.db`.
+Supports MySQL and MongoDB. Configure the database connection in your `.env` file with the `DATABASE_URL` environment variable.
 
 ## Development
 

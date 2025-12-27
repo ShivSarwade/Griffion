@@ -17,15 +17,6 @@ function generateSecrets() {
 function buildDatabaseUrl(config) {
   const { dbProvider } = config;
   
-  if (dbProvider === 'sqlite') {
-    return 'file:./data/app.db';
-  }
-  
-  if (dbProvider === 'postgresql') {
-    const { dbHost, dbPort, dbName, dbUser, dbPassword } = config;
-    return `postgresql://${dbUser}:${dbPassword}@${dbHost}:${dbPort || 5432}/${dbName}?schema=public`;
-  }
-  
   if (dbProvider === 'mysql') {
     const { dbHost, dbPort, dbName, dbUser, dbPassword } = config;
     return `mysql://${dbUser}:${dbPassword}@${dbHost}:${dbPort || 3306}/${dbName}`;
@@ -74,11 +65,11 @@ function buildTokenMap(config) {
     '__FRONTEND_URL__': config.frontendUrl || 'http://localhost:3000',
     
     // Database
-    '__DB_PROVIDER__': config.dbProvider || 'sqlite',
+    '__DB_PROVIDER__': config.dbProvider || 'mysql',
     '__DATABASE_URL__': databaseUrl,
   
-  // JSON field type (SQLite doesn't support Json type)
-  '__JSON_TYPE__': config.dbProvider === 'sqlite' ? 'String' : 'Json',
+  // JSON field type
+  '__JSON_TYPE__': 'Json',
     
     // JWT Secrets
     '__JWT_SECRET__': secrets.jwtSecret,
@@ -172,9 +163,8 @@ EMAIL_FROM=${projectSlug}@yourapp.com`;
   }
 
   // README dynamic sections
-  tokens['__DB_PROVIDER_NAME__'] = config.dbProvider === 'postgresql' ? 'PostgreSQL' : 
-                                    config.dbProvider === 'mysql' ? 'MySQL' :
-                                    config.dbProvider === 'mongodb' ? 'MongoDB' : 'SQLite';
+  tokens['__DB_PROVIDER_NAME__'] = config.dbProvider === 'mysql' ? 'MySQL' :
+                                    config.dbProvider === 'mongodb' ? 'MongoDB' : 'MySQL';
 
   if (config.enablePasswordRecovery) {
     tokens['__PASSWORD_RECOVERY_ENDPOINTS__'] = `- \`POST /api/auth/forgot-password\` - Request password reset
@@ -252,8 +242,8 @@ Since password recovery is enabled, email must be configured:
   // Roles seed
   tokens['__ROLES_SEED__'] = generateRolesSeed(config.roles);
 
-  // Navigation seed
-  tokens['__NAVIGATION_SEED__'] = generateNavigationSeed(config.navigationTree);
+  // Navigation seed - pass roles for ID mapping
+  tokens['__NAVIGATION_SEED__'] = generateNavigationSeed(config.navigationTree, config.roles);
 
   // Groups model and relation
   if (config.enableGroups) {
@@ -299,7 +289,7 @@ model GroupMembership {
  */
 function generateRolesSeed(roles) {
   if (!roles || roles.length === 0) {
-    return `const defaultRole = await prisma.role.create({
+    return `const adminRole = await prisma.role.create({
       data: {
         name: 'Admin',
         description: 'System Administrator',
@@ -310,8 +300,11 @@ function generateRolesSeed(roles) {
     });`;
   }
 
-  const roleCreations = roles.map((role, index) => `
-    const role${index} = await prisma.role.create({
+  const roleCreations = roles.map((role) => {
+    // Remove spaces and special chars from role name for variable name
+    const varName = `${role.name.toLowerCase().replace(/\s+/g, '')}Role`;
+    return `
+    const ${varName} = await prisma.role.create({
       data: {
         name: '${role.name}',
         description: '${role.description || ''}',
@@ -319,18 +312,30 @@ function generateRolesSeed(roles) {
         isSystemRole: ${role.isSystemRole || false},
         permissions: JSON.stringify(${JSON.stringify(role.permissions || [])})
       }
-    });`).join('\n');
+    });`;
+  }).join('\n');
 
   return roleCreations;
 }
 
 /**
  * Generate navigation seed code
+ * @param {Array} navigationTree - Navigation tree structure
+ * @param {Array} roles - Array of role objects with id and name
  */
-function generateNavigationSeed(navigationTree) {
+function generateNavigationSeed(navigationTree, roles = []) {
   if (!navigationTree || navigationTree.length === 0) {
     return `console.log('  🗺️  No navigation nodes to seed');`;
   }
+
+  // Create a map from role names to role variable names
+  const roleNameMap = {};
+  const roleIdMap = {};
+  roles.forEach(role => {
+    const varName = `${role.name.toLowerCase().replace(/\s+/g, '')}Role`;
+    roleNameMap[role.name] = varName; // Maps 'Admin' -> 'adminRole'
+    roleIdMap[role.id] = varName; // Maps 'role_1' -> 'adminRole', 'role_y1aiy' -> 'teacherRole'
+  });
 
   let code = `console.log('  🗺️  Creating navigation nodes...');\n`;
   
@@ -346,6 +351,24 @@ function generateNavigationSeed(navigationTree) {
       nodeCode += `${indent}    isPublic: ${node.isPublic || false},\n`;
       nodeCode += `${indent}    order: ${node.order || index},\n`;
       if (parentVar !== 'null') nodeCode += `${indent}    parentId: ${parentVar}.id,\n`;
+      
+      // Add role connections if accessRoles is specified
+      if (node.accessRoles && Array.isArray(node.accessRoles) && node.accessRoles.length > 0) {
+        nodeCode += `${indent}    accessRoles: {\n`;
+        nodeCode += `${indent}      connect: [\n`;
+        node.accessRoles.forEach(roleIdentifier => {
+          // Try to match by role name first (for test-generator), then by ID (for frontend)
+          let roleVarName = roleNameMap[roleIdentifier] || roleIdMap[roleIdentifier];
+          if (!roleVarName) {
+            // Fallback: create variable name from identifier
+            roleVarName = `${roleIdentifier.toLowerCase().replace(/\s+/g, '')}Role`;
+          }
+          nodeCode += `${indent}        { id: ${roleVarName}.id },\n`;
+        });
+        nodeCode += `${indent}      ]\n`;
+        nodeCode += `${indent}    },\n`;
+      }
+      
       nodeCode += `${indent}  }\n`;
       nodeCode += `${indent}});\n`;
       

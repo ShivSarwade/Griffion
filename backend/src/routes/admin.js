@@ -20,6 +20,10 @@ router.post('/users/:id/force-password', adminController.forcePasswordChange);
 
 // Roles management
 router.get('/roles', adminController.getAllRoles);
+router.post('/roles', adminController.createRole);
+router.put('/roles/:id', adminController.updateRole);
+router.patch('/roles/:id', adminController.updateRole); // Alias for PATCH support
+router.delete('/roles/:id', adminController.deleteRole);
 
 // Audit logs
 router.get('/audit-logs', adminController.getAuditLogs);

@@ -39,12 +39,27 @@ async function seedDatabase() {
 
     // Seed Admin User
     console.log('  👤 Creating admin user...');
-    const adminRole = await prisma.role.findUnique({
-      where: { name: '__DEFAULT_ADMIN_ROLE__' }
-    });
+    
+    // Use the first admin role or find by name as fallback
+    let selectedAdminRole;
+    try {
+      selectedAdminRole = await prisma.role.findUnique({
+        where: { name: '__DEFAULT_ADMIN_ROLE__' }
+      });
+    } catch (error) {
+      // If the specified role doesn't exist, try to find any admin role
+      selectedAdminRole = await prisma.role.findFirst({
+        where: { 
+          OR: [
+            { registrationType: 'admin' },
+            { isSystemRole: true }
+          ]
+        }
+      });
+    }
 
-    if (!adminRole) {
-      throw new Error('Admin role not found. Cannot create admin user.');
+    if (!selectedAdminRole) {
+      throw new Error('No admin role available. Cannot create admin user.');
     }
 
     const hashedPassword = await bcrypt.hash('__ADMIN_PASSWORD__', 12);
@@ -56,7 +71,7 @@ async function seedDatabase() {
       lastName: '__ADMIN_LAST_NAME__',
       emailVerified: true,
       mfaEnabled: false,
-      roleId: adminRole.id
+      roleId: selectedAdminRole.id
     };
     
     __USERNAME_FIELD_ASSIGN__
@@ -73,7 +88,7 @@ async function seedDatabase() {
   }
 }
 
-// Helper function to handle JSON fields (SQLite stores as string)
+// Helper function to handle JSON fields
 function jsonField(value) {
   if (typeof value === 'string') return value;
   return JSON.stringify(value);
