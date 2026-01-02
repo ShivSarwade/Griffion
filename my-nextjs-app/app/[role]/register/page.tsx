@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks'
 import { setCredentials, setError, setLoading } from '@/lib/redux/slices/authSlice'
 import { selectAuthLoading, selectAuthError } from '@/lib/redux/slices/authSlice'
+import { selectTheme } from '@/lib/redux/slices/configSlice'
 import * as api from '@/lib/apiService'
 
 export default function DynamicRegisterPage() {
@@ -17,6 +18,7 @@ export default function DynamicRegisterPage() {
   
   const loading = useAppSelector(selectAuthLoading)
   const error = useAppSelector(selectAuthError)
+  const theme = useAppSelector(selectTheme)
   
   const [formData, setFormData] = React.useState({
     firstName: '',
@@ -130,24 +132,24 @@ export default function DynamicRegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-zinc-950 p-4">
+    <div className={`min-h-screen flex items-center justify-center p-4 ${theme === 'dark' ? 'dark' : ''}`} style={{ backgroundColor: 'var(--color-background)' }}>
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-3 mb-6">
             <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-500/20 transform -rotate-3">
               <ShieldCheck size={28} />
             </div>
-            <span className="font-black tracking-tighter text-3xl uppercase italic text-white">
+            <span className="font-black tracking-tighter text-3xl uppercase italic" style={{ color: 'var(--color-foreground)' }}>
               {process.env.NEXT_PUBLIC_APP_NAME || 'Griffion'}
             </span>
           </div>
-          <h1 className="text-4xl font-black tracking-tighter uppercase italic text-white mb-2">
+          <h1 className="text-4xl font-black tracking-tighter uppercase italic mb-2" style={{ color: 'var(--color-foreground)' }}>
             Register as {role.charAt(0).toUpperCase() + role.slice(1)}
           </h1>
-          <p className="text-zinc-400 text-sm">Create your account to get started</p>
+          <p className="text-sm" style={{ color: 'var(--color-muted-foreground)' }}>Create your account to get started</p>
         </div>
 
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 shadow-xl">
+        <div className="rounded-2xl p-8 shadow-xl border" style={{ backgroundColor: 'var(--color-card)', borderColor: 'var(--color-border)' }}>
           <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
               <div className="bg-red-950/30 border border-red-800 text-red-400 px-4 py-3 rounded-lg text-sm">
@@ -157,15 +159,16 @@ export default function DynamicRegisterPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-bold text-zinc-300 mb-2">First Name</label>
+                <label className="block text-sm font-bold mb-2" style={{ color: 'var(--color-card-foreground)' }}>First Name</label>
                 <input
                   type="text"
                   required
                   value={formData.firstName}
                   onChange={(e) => handleFieldChange('firstName', e.target.value)}
-                  className={`w-full px-4 py-3 bg-zinc-800 border rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-1 ${
-                    validationErrors.firstName ? 'border-red-500' : 'border-zinc-700 focus:border-indigo-500'
+                  className={`w-full px-4 py-3 border rounded-lg placeholder-zinc-500 focus:outline-none focus:ring-1 ${
+                    validationErrors.firstName ? 'border-red-500' : 'focus:border-indigo-500'
                   }`}
+                  style={{ backgroundColor: 'var(--color-muted)', color: 'var(--color-foreground)', borderColor: validationErrors.firstName ? undefined : 'var(--color-border)' }}
                   placeholder="John"
                 />
                 {validationErrors.firstName && (
@@ -174,15 +177,16 @@ export default function DynamicRegisterPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-zinc-300 mb-2">Last Name</label>
+                <label className="block text-sm font-bold mb-2" style={{ color: 'var(--color-card-foreground)' }}>Last Name</label>
                 <input
                   type="text"
                   required
                   value={formData.lastName}
                   onChange={(e) => handleFieldChange('lastName', e.target.value)}
-                  className={`w-full px-4 py-3 bg-zinc-800 border rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-1 ${
-                    validationErrors.lastName ? 'border-red-500' : 'border-zinc-700 focus:border-indigo-500'
+                  className={`w-full px-4 py-3 border rounded-lg placeholder-zinc-500 focus:outline-none focus:ring-1 ${
+                    validationErrors.lastName ? 'border-red-500' : 'focus:border-indigo-500'
                   }`}
+                  style={{ backgroundColor: 'var(--color-muted)', color: 'var(--color-foreground)', borderColor: validationErrors.lastName ? undefined : 'var(--color-border)' }}
                   placeholder="Doe"
                 />
                 {validationErrors.lastName && (
@@ -192,7 +196,7 @@ export default function DynamicRegisterPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-zinc-300 mb-2">
+              <label className="block text-sm font-bold mb-2" style={{ color: 'var(--color-card-foreground)' }}>
                 {primaryIdentifier === 'email' ? 'Email Address' : 
                  primaryIdentifier === 'username' ? 'Username' : 'Email or Username'}
               </label>
@@ -208,9 +212,10 @@ export default function DynamicRegisterPage() {
                   required
                   value={formData.identifier}
                   onChange={(e) => handleFieldChange('identifier', e.target.value)}
-                  className={`w-full pl-12 pr-4 py-3 bg-zinc-800 border rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-1 ${
-                    validationErrors.identifier ? 'border-red-500' : 'border-zinc-700 focus:border-indigo-500'
+                  className={`w-full pl-12 pr-4 py-3 border rounded-lg placeholder-zinc-500 focus:outline-none focus:ring-1 ${
+                    validationErrors.identifier ? 'border-red-500' : 'focus:border-indigo-500'
                   }`}
+                  style={{ backgroundColor: 'var(--color-muted)', color: 'var(--color-foreground)', borderColor: validationErrors.identifier ? undefined : 'var(--color-border)' }}
                   placeholder={primaryIdentifier === 'email' ? 'you@example.com' : primaryIdentifier === 'username' ? 'username' : 'username or email'}
                 />
               </div>
@@ -220,7 +225,7 @@ export default function DynamicRegisterPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-zinc-300 mb-2">Password</label>
+              <label className="block text-sm font-bold mb-2" style={{ color: 'var(--color-card-foreground)' }}>Password</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                   <Lock size={18} className="text-zinc-500" />
@@ -230,9 +235,10 @@ export default function DynamicRegisterPage() {
                   required
                   value={formData.password}
                   onChange={(e) => handleFieldChange('password', e.target.value)}
-                  className={`w-full pl-12 pr-12 py-3 bg-zinc-800 border rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-1 ${
-                    validationErrors.password ? 'border-red-500' : 'border-zinc-700 focus:border-indigo-500'
+                  className={`w-full pl-12 pr-12 py-3 border rounded-lg placeholder-zinc-500 focus:outline-none focus:ring-1 ${
+                    validationErrors.password ? 'border-red-500' : 'focus:border-indigo-500'
                   }`}
+                  style={{ backgroundColor: 'var(--color-muted)', color: 'var(--color-foreground)', borderColor: validationErrors.password ? undefined : 'var(--color-border)' }}
                   placeholder="••••••••"
                 />
                 <button
@@ -249,7 +255,7 @@ export default function DynamicRegisterPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-zinc-300 mb-2">Confirm Password</label>
+              <label className="block text-sm font-bold mb-2" style={{ color: 'var(--color-card-foreground)' }}>Confirm Password</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                   <Lock size={18} className="text-zinc-500" />
@@ -259,9 +265,10 @@ export default function DynamicRegisterPage() {
                   required
                   value={formData.confirmPassword}
                   onChange={(e) => handleFieldChange('confirmPassword', e.target.value)}
-                  className={`w-full pl-12 pr-12 py-3 bg-zinc-800 border rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-1 ${
-                    validationErrors.confirmPassword ? 'border-red-500' : 'border-zinc-700 focus:border-indigo-500'
+                  className={`w-full pl-12 pr-12 py-3 border rounded-lg placeholder-zinc-500 focus:outline-none focus:ring-1 ${
+                    validationErrors.confirmPassword ? 'border-red-500' : 'focus:border-indigo-500'
                   }`}
+                  style={{ backgroundColor: 'var(--color-muted)', color: 'var(--color-foreground)', borderColor: validationErrors.confirmPassword ? undefined : 'var(--color-border)' }}
                   placeholder="••••••••"
                 />
                 <button
@@ -286,7 +293,7 @@ export default function DynamicRegisterPage() {
             </button>
           </form>
 
-          <div className="mt-6 text-center text-sm text-zinc-400">
+          <div className="mt-6 text-center text-sm" style={{ color: 'var(--color-muted-foreground)' }}>
             Already have an account?{' '}
             <Link href="/login" className="text-indigo-400 hover:text-indigo-300 font-medium">
               Sign in

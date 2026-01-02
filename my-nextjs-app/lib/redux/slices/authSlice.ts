@@ -42,6 +42,7 @@ const authSlice = createSlice({
       state.refreshToken = action.payload.refreshToken
       state.isAuthenticated = true
       state.error = null
+      state.loading = false
     },
     setUser: (state, action: PayloadAction<User>) => {
       state.user = action.payload
@@ -61,6 +62,7 @@ const authSlice = createSlice({
       state.refreshToken = null
       state.isAuthenticated = false
       state.error = null
+      state.loading = false
     },
   },
 })

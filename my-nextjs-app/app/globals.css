@@ -26,40 +26,43 @@
   --color-card: #ffffff;
   --color-card-foreground: #09090b;
   
-  /* Sidebar */
-  --sidebar-background: #fafafa;
-  --sidebar-foreground: #18181b;
-  --sidebar-border: #e4e4e7;
-  --sidebar-active-bg: #f4f4f5;
-  --sidebar-active-text: var(--brand-primary);
+  /* Sidebar - Light */
+  --sidebar-background: #f9fafb;
+  --sidebar-foreground: #111827;
+  --sidebar-border: #e5e7eb;
+  --sidebar-active-bg: #e0e7ff;
+  --sidebar-active-text: #4f46e5;
+  --sidebar-hover-bg: #f3f4f6;
   
-  /* Navbar */
+  /* Navbar - Light */
   --navbar-background: #ffffff;
-  --navbar-foreground: #09090b;
-  --navbar-border: #e4e4e7;
+  --navbar-foreground: #111827;
+  --navbar-border: #e5e7eb;
 }
 
-[data-theme='dark'] {
+[data-theme='dark'],
+.dark {
   /* Theme Colors - Dark Mode */
-  --color-background: #09090b;
+  --color-background: #0a0a0a;
   --color-foreground: #fafafa;
-  --color-muted: #27272a;
+  --color-muted: #1f1f1f;
   --color-muted-foreground: #a1a1aa;
   --color-border: #27272a;
-  --color-card: #18181b;
+  --color-card: #171717;
   --color-card-foreground: #fafafa;
   
   /* Sidebar - Dark */
-  --sidebar-background: #18181b;
+  --sidebar-background: #0f0f0f;
   --sidebar-foreground: #fafafa;
-  --sidebar-border: #27272a;
-  --sidebar-active-bg: #27272a;
-  --sidebar-active-text: var(--brand-primary);
+  --sidebar-border: #262626;
+  --sidebar-active-bg: #1f1f1f;
+  --sidebar-active-text: #818cf8;
+  --sidebar-hover-bg: #1a1a1a;
   
   /* Navbar - Dark */
-  --navbar-background: #09090b;
+  --navbar-background: #0a0a0a;
   --navbar-foreground: #fafafa;
-  --navbar-border: #27272a;
+  --navbar-border: #262626;
 }
 
 /* Apply brand colors to utility classes */

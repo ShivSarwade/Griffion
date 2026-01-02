@@ -44,17 +44,6 @@ export default function DashboardPage() {
     })
   }, [router, isAuthenticated, dispatch])
 
-  useEffect(() => {
-    // Apply theme to document whenever theme changes
-    if (typeof window !== 'undefined') {
-      if (theme === 'dark') {
-        document.documentElement.classList.add('dark')
-      } else {
-        document.documentElement.classList.remove('dark')
-      }
-    }
-  }, [theme])
-
   const handleToggleTheme = () => {
     dispatch(toggleTheme())
   }
@@ -75,7 +64,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className={`min-h-screen flex ${theme === 'dark' ? 'bg-zinc-950 text-zinc-100 dark' : 'bg-gradient-to-br from-zinc-50 via-white to-zinc-100/50 text-zinc-900'}`}>
+    <div className={`min-h-screen flex ${theme === 'dark' ? 'dark' : ''}`} style={{ backgroundColor: 'var(--color-background)', color: 'var(--color-foreground)' }}>
       <Sidebar 
         navTree={navTree}
         user={user}
@@ -93,11 +82,14 @@ export default function DashboardPage() {
 
         <main className="flex-1 p-8 md:p-16">
           <div className="max-w-4xl space-y-4">
-            <h1 className="text-5xl md:text-7xl font-black tracking-tighter uppercase italic leading-tight text-zinc-900 dark:text-zinc-100">
+            <h1 
+              className="text-5xl md:text-7xl font-black tracking-tighter uppercase italic leading-tight"
+              style={{ color: 'var(--color-foreground)' }}
+            >
               Dashboard
             </h1>
             <div className="w-24 h-2 bg-gradient-to-r from-indigo-600 to-indigo-500 rounded-full shadow-lg shadow-indigo-500/30 dark:shadow-indigo-500/20" />
-            <p className="text-zinc-600 dark:text-zinc-500 text-sm font-medium mt-8 max-w-md">
+            <p className="text-sm font-medium mt-8 max-w-md" style={{ color: 'var(--color-muted-foreground)' }}>
               Welcome back{user?.firstName ? `, ${user.firstName}` : ''}. This is your application canvas, pre-configured with your custom roles, public pages, and navigation hierarchy.
             </p>
           </div>

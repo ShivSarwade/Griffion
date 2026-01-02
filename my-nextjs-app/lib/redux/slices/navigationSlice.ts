@@ -1,11 +1,12 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
+import type { LucideIcon } from 'lucide-react'
 
 interface NavItem {
   id: string
   name: string
   type: 'page' | 'section'
   path?: string
-  icon: string
+  icon: string | LucideIcon
   isPublic: boolean
   order?: number
   accessRoles?: string[]

@@ -66,12 +66,44 @@ export default function DynamicPage() {
     
     const lastSegment = slug.filter(Boolean)[slug.filter(Boolean).length - 1] || ''
     
+    // Build breadcrumbs from navigation path
+    const breadcrumbs = buildBreadcrumbs(navTree || [], fullPath, slug.filter(Boolean) as string[])
+    
     setPageData({
       title: navItem?.name || formatTitle(lastSegment),
-      breadcrumbs: slug.filter(Boolean).map(s => formatTitle(s || '')),
+      breadcrumbs,
       navItem
     })
   }, [isAuthenticated, router, fullPath, slug, navTree])
+
+  // Build breadcrumbs from navigation tree
+  const buildBreadcrumbs = (items: NavItem[], targetPath: string, slugSegments: string[]): string[] => {
+    // Try to find the path in navigation tree first
+    const pathParts = findPathToItem(items, targetPath)
+    if (pathParts.length > 0) {
+      return pathParts
+    }
+    
+    // Fallback to formatting slug segments
+    return slugSegments.map(s => formatTitle(s))
+  }
+
+  // Find path to item in navigation tree (returns array of names)
+  const findPathToItem = (items: NavItem[], targetPath: string, currentPath: string[] = []): string[] => {
+    for (const item of items) {
+      const newPath = [...currentPath, item.name]
+      
+      if (item.path === targetPath) {
+        return newPath
+      }
+      
+      if (item.children) {
+        const found = findPathToItem(item.children, targetPath, newPath)
+        if (found.length > 0) return found
+      }
+    }
+    return []
+  }
 
   // Recursively search navigation tree for matching path
   const findNavItemByPath = (items: NavItem[], path: string): NavItem | null => {
@@ -103,17 +135,6 @@ export default function DynamicPage() {
     dispatch(toggleSidebar())
   }
 
-  useEffect(() => {
-    // Apply theme to document
-    if (typeof window !== 'undefined') {
-      if (theme === 'dark') {
-        document.documentElement.classList.add('dark')
-      } else {
-        document.documentElement.classList.remove('dark')
-      }
-    }
-  }, [theme])
-
   if (!mounted || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-zinc-950">
@@ -126,7 +147,7 @@ export default function DynamicPage() {
   }
 
   return (
-    <div className={`min-h-screen flex ${theme === 'dark' ? 'bg-zinc-950 text-zinc-100 dark' : 'bg-gradient-to-br from-zinc-50 via-white to-zinc-100/50 text-zinc-900'}`}>
+    <div className={`min-h-screen flex ${theme === 'dark' ? 'dark' : ''}`} style={{ backgroundColor: 'var(--color-background)', color: 'var(--color-foreground)' }}>
       <Sidebar 
         navTree={navTree || []}
         user={user}
@@ -145,14 +166,22 @@ export default function DynamicPage() {
         <main className="flex-1 p-8 md:p-16">
           <div className="max-w-6xl space-y-8">
             {/* Breadcrumbs */}
-            <div className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
-              <span className="hover:text-indigo-600 dark:hover:text-indigo-400 cursor-pointer" onClick={() => router.push('/dashboard')}>
+            <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--color-muted-foreground)' }}>
+              <span className="hover:opacity-80 cursor-pointer transition-opacity" onClick={() => router.push('/dashboard')}>
                 Dashboard
               </span>
               {pageData.breadcrumbs.map((crumb, index) => (
                 <React.Fragment key={index}>
                   <ChevronRight className="h-4 w-4" />
-                  <span className={index === pageData.breadcrumbs.length - 1 ? 'text-zinc-900 dark:text-zinc-100 font-medium' : 'hover:text-indigo-600 dark:hover:text-indigo-400 cursor-pointer'}>
+                  <span 
+                    className="transition-opacity"
+                    style={{
+                      color: index === pageData.breadcrumbs.length - 1 ? 'var(--color-foreground)' : 'var(--color-muted-foreground)',
+                      fontWeight: index === pageData.breadcrumbs.length - 1 ? 500 : 400,
+                      cursor: index < pageData.breadcrumbs.length - 1 ? 'pointer' : 'default',
+                      opacity: index < pageData.breadcrumbs.length - 1 ? 0.8 : 1
+                    }}
+                  >
                     {crumb}
                   </span>
                 </React.Fragment>
@@ -161,7 +190,10 @@ export default function DynamicPage() {
 
             {/* Page Title */}
             <div className="space-y-4">
-              <h1 className="text-5xl md:text-7xl font-black tracking-tighter uppercase italic leading-tight text-zinc-900 dark:text-zinc-100">
+              <h1 
+                className="text-5xl md:text-7xl font-black tracking-tighter uppercase italic leading-tight"
+                style={{ color: 'var(--color-foreground)' }}
+              >
                 {pageData.title}
               </h1>
               <div className="w-24 h-2 bg-gradient-to-r from-indigo-600 to-indigo-500 rounded-full shadow-lg shadow-indigo-500/30 dark:shadow-indigo-500/20" />
@@ -170,30 +202,48 @@ export default function DynamicPage() {
             {/* Page Content */}
             <div className="space-y-6">
               {/* Route Information Card */}
-              <div className="bg-white dark:bg-zinc-900 border-2 border-zinc-200 dark:border-zinc-800 rounded-xl p-8 space-y-4">
+              <div 
+                className="border-2 rounded-xl p-8 space-y-4"
+                style={{
+                  backgroundColor: 'var(--color-card)',
+                  borderColor: 'var(--color-border)'
+                }}
+              >
                 <div className="flex items-start gap-4">
                   <div className="p-3 bg-indigo-600/10 rounded-lg">
                     <FileText className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
                   </div>
                   <div className="flex-1">
-                    <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">
+                    <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--color-foreground)' }}>
                       Dynamic Route Active
                     </h2>
-                    <p className="text-zinc-600 dark:text-zinc-400 mb-4">
+                    <p className="mb-4" style={{ color: 'var(--color-muted-foreground)' }}>
                       This page is dynamically rendered based on your navigation tree. The route is live and ready for custom logic.
                     </p>
                     
                     <div className="space-y-2 text-sm">
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold text-zinc-700 dark:text-zinc-300">Path:</span>
-                        <code className="px-2 py-1 bg-zinc-100 dark:bg-zinc-800 rounded text-indigo-600 dark:text-indigo-400 font-mono">
+                        <span className="font-semibold" style={{ color: 'var(--color-foreground)' }}>Path:</span>
+                        <code 
+                          className="px-2 py-1 rounded font-mono"
+                          style={{
+                            backgroundColor: 'var(--color-muted)',
+                            color: 'var(--brand-primary)'
+                          }}
+                        >
                           {fullPath}
                         </code>
                       </div>
                       
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold text-zinc-700 dark:text-zinc-300">Route Segments:</span>
-                        <code className="px-2 py-1 bg-zinc-100 dark:bg-zinc-800 rounded text-zinc-600 dark:text-zinc-400 font-mono">
+                        <span className="font-semibold" style={{ color: 'var(--color-foreground)' }}>Route Segments:</span>
+                        <code 
+                          className="px-2 py-1 rounded font-mono"
+                          style={{
+                            backgroundColor: 'var(--color-muted)',
+                            color: 'var(--color-muted-foreground)'
+                          }}
+                        >
                           {JSON.stringify(slug)}
                         </code>
                       </div>
@@ -201,21 +251,33 @@ export default function DynamicPage() {
                       {pageData.navItem && (
                         <>
                           <div className="flex items-center gap-2">
-                            <span className="font-semibold text-zinc-700 dark:text-zinc-300">Icon:</span>
-                            <code className="px-2 py-1 bg-zinc-100 dark:bg-zinc-800 rounded text-zinc-600 dark:text-zinc-400 font-mono">
+                            <span className="font-semibold" style={{ color: 'var(--color-foreground)' }}>Icon:</span>
+                            <code 
+                              className="px-2 py-1 rounded font-mono"
+                              style={{
+                                backgroundColor: 'var(--color-muted)',
+                                color: 'var(--color-muted-foreground)'
+                              }}
+                            >
                               {typeof pageData.navItem.icon === 'string' ? pageData.navItem.icon : 'icon'}
                             </code>
                           </div>
                           
                           <div className="flex items-center gap-2">
-                            <span className="font-semibold text-zinc-700 dark:text-zinc-300">Type:</span>
-                            <code className="px-2 py-1 bg-zinc-100 dark:bg-zinc-800 rounded text-zinc-600 dark:text-zinc-400 font-mono">
+                            <span className="font-semibold" style={{ color: 'var(--color-foreground)' }}>Type:</span>
+                            <code 
+                              className="px-2 py-1 rounded font-mono"
+                              style={{
+                                backgroundColor: 'var(--color-muted)',
+                                color: 'var(--color-muted-foreground)'
+                              }}
+                            >
                               {pageData.navItem.type}
                             </code>
                           </div>
 
                           <div className="flex items-center gap-2">
-                            <span className="font-semibold text-zinc-700 dark:text-zinc-300">Access:</span>
+                            <span className="font-semibold" style={{ color: 'var(--color-foreground)' }}>Access:</span>
                             <span className={`px-2 py-1 rounded text-xs font-semibold ${
                               pageData.navItem.isPublic 
                                 ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
@@ -254,29 +316,47 @@ export default function DynamicPage() {
 
               {/* Quick Stats */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-white dark:bg-zinc-900 border-2 border-zinc-200 dark:border-zinc-800 rounded-lg p-6 text-center">
+                <div 
+                  className="border-2 rounded-lg p-6 text-center"
+                  style={{
+                    backgroundColor: 'var(--color-card)',
+                    borderColor: 'var(--color-border)'
+                  }}
+                >
                   <div className="text-3xl font-black text-indigo-600 dark:text-indigo-400 mb-2">
                     {slug.length}
                   </div>
-                  <div className="text-sm text-zinc-600 dark:text-zinc-400 font-medium uppercase tracking-wide">
+                  <div className="text-sm font-medium uppercase tracking-wide" style={{ color: 'var(--color-muted-foreground)' }}>
                     Route Depth
                   </div>
                 </div>
 
-                <div className="bg-white dark:bg-zinc-900 border-2 border-zinc-200 dark:border-zinc-800 rounded-lg p-6 text-center">
+                <div 
+                  className="border-2 rounded-lg p-6 text-center"
+                  style={{
+                    backgroundColor: 'var(--color-card)',
+                    borderColor: 'var(--color-border)'
+                  }}
+                >
                   <div className="text-3xl font-black text-indigo-600 dark:text-indigo-400 mb-2">
                     {navTree?.length || 0}
                   </div>
-                  <div className="text-sm text-zinc-600 dark:text-zinc-400 font-medium uppercase tracking-wide">
+                  <div className="text-sm font-medium uppercase tracking-wide" style={{ color: 'var(--color-muted-foreground)' }}>
                     Nav Items
                   </div>
                 </div>
 
-                <div className="bg-white dark:bg-zinc-900 border-2 border-zinc-200 dark:border-zinc-800 rounded-lg p-6 text-center">
+                <div 
+                  className="border-2 rounded-lg p-6 text-center"
+                  style={{
+                    backgroundColor: 'var(--color-card)',
+                    borderColor: 'var(--color-border)'
+                  }}
+                >
                   <div className="text-3xl font-black text-indigo-600 dark:text-indigo-400 mb-2">
                     {user?.role || 'User'}
                   </div>
-                  <div className="text-sm text-zinc-600 dark:text-zinc-400 font-medium uppercase tracking-wide">
+                  <div className="text-sm font-medium uppercase tracking-wide" style={{ color: 'var(--color-muted-foreground)' }}>
                     Your Role
                   </div>
                 </div>

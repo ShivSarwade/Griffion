@@ -32,16 +32,6 @@ export default function SettingsPage() {
     dispatch(fetchNavigation())
   }, [router, isAuthenticated, dispatch])
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      if (theme === 'dark') {
-        document.documentElement.classList.add('dark')
-      } else {
-        document.documentElement.classList.remove('dark')
-      }
-    }
-  }, [theme])
-
   const handleToggleTheme = () => {
     dispatch(toggleTheme())
   }
@@ -59,7 +49,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className={`min-h-screen flex ${theme === 'dark' ? 'bg-zinc-950 text-zinc-100 dark' : 'bg-gradient-to-br from-zinc-50 via-white to-zinc-100/50 text-zinc-900'}`}>
+    <div className={`min-h-screen flex ${theme === 'dark' ? 'dark' : ''}`} style={{ backgroundColor: 'var(--color-background)', color: 'var(--color-foreground)' }}>
       <Sidebar 
         navTree={navTree}
         user={user}

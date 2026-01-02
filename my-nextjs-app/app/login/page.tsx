@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks'
 import { setCredentials, setError, setLoading } from '@/lib/redux/slices/authSlice'
 import { selectAuthLoading, selectAuthError } from '@/lib/redux/slices/authSlice'
+import { selectTheme } from '@/lib/redux/slices/configSlice'
 import * as api from '@/lib/apiService'
 
 export default function LoginPage() {
@@ -15,6 +16,7 @@ export default function LoginPage() {
   
   const loading = useAppSelector(selectAuthLoading)
   const error = useAppSelector(selectAuthError)
+  const theme = useAppSelector(selectTheme)
   
   const [formData, setFormData] = useState({
     identifier: '',
@@ -69,6 +71,10 @@ export default function LoginPage() {
   }
 
   useEffect(() => {
+    // Reset loading state when component mounts
+    dispatch(setLoading(false))
+    dispatch(setError(null))
+    
     // Check for frontend override - default to email, only use username if explicitly set
     const envPrimaryIdentifier = process.env.NEXT_PUBLIC_PRIMARY_IDENTIFIER as 'email' | 'username' | 'both' | undefined
 
@@ -89,7 +95,7 @@ export default function LoginPage() {
       }
     }
     fetchConfig()
-  }, [])
+  }, [dispatch])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -211,22 +217,22 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-zinc-950 p-4">
+    <div className={`min-h-screen flex items-center justify-center p-4 ${theme === 'dark' ? 'dark' : ''}`} style={{ backgroundColor: 'var(--color-background)' }}>
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-3 mb-6">
             <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-500/20 transform -rotate-3">
               <ShieldCheck size={28} />
             </div>
-            <span className="font-black tracking-tighter text-3xl uppercase italic text-white">Griffion</span>
+            <span className="font-black tracking-tighter text-3xl uppercase italic" style={{ color: 'var(--color-foreground)' }}>Griffion</span>
           </div>
-          <h1 className="text-4xl font-black tracking-tighter uppercase italic text-white mb-2">
+          <h1 className="text-4xl font-black tracking-tighter uppercase italic mb-2" style={{ color: 'var(--color-foreground)' }}>
             Welcome Back
           </h1>
-          <p className="text-zinc-400 text-sm">Sign in to your account to continue</p>
+          <p className="text-sm" style={{ color: 'var(--color-muted-foreground)' }}>Sign in to your account to continue</p>
         </div>
 
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 shadow-xl">
+        <div className="border rounded-2xl p-8 shadow-xl" style={{ backgroundColor: 'var(--color-card)', borderColor: 'var(--color-border)' }}>
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
               <div className="bg-red-950/30 border border-red-800 text-red-400 px-4 py-3 rounded-lg text-sm">
@@ -235,16 +241,16 @@ export default function LoginPage() {
             )}
 
             <div>
-              <label className="block text-sm font-bold text-zinc-300 mb-2">
+              <label className="block text-sm font-bold mb-2" style={{ color: 'var(--color-foreground)' }}>
                 {primaryIdentifier === 'email' ? 'Email Address' : 
                  primaryIdentifier === 'username' ? 'Username' : 
                  'Email or Username'}
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none" style={{ color: 'var(--color-muted-foreground)' }}>
                   {primaryIdentifier === 'username' ? 
-                    <User size={18} className="text-zinc-500" /> : 
-                    <Mail size={18} className="text-zinc-500" />
+                    <User size={18} /> : 
+                    <Mail size={18} />
                   }
                 </div>
                 <input
@@ -252,11 +258,12 @@ export default function LoginPage() {
                   required
                   value={formData.identifier}
                   onChange={(e) => handleIdentifierChange(e.target.value)}
-                  className={`w-full pl-12 pr-4 py-3 bg-zinc-800 border rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-1 transition-colors ${
-                    validationError 
-                      ? 'border-red-500 focus:border-red-500 focus:ring-red-500' 
-                      : 'border-zinc-700 focus:border-indigo-500 focus:ring-indigo-500'
-                  }`}
+                  className="w-full pl-12 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-1 transition-colors"
+                  style={{
+                    backgroundColor: 'var(--color-muted)',
+                    borderColor: validationError ? '#ef4444' : 'var(--color-border)',
+                    color: 'var(--color-foreground)'
+                  }}
                   placeholder={
                     primaryIdentifier === 'email' ? 'you@example.com' : 
                     primaryIdentifier === 'username' ? 'username' : 
@@ -270,25 +277,31 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-zinc-300 mb-2">
+              <label className="block text-sm font-bold mb-2" style={{ color: 'var(--color-foreground)' }}>
                 Password
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <Lock size={18} className="text-zinc-500" />
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none" style={{ color: 'var(--color-muted-foreground)' }}>
+                  <Lock size={18} />
                 </div>
                 <input
                   type={showPassword ? 'text' : 'password'}
                   required
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="w-full pl-12 pr-12 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
+                  className="w-full pl-12 pr-12 py-3 border rounded-lg focus:outline-none focus:ring-1 transition-colors"
+                  style={{
+                    backgroundColor: 'var(--color-muted)',
+                    borderColor: 'var(--color-border)',
+                    color: 'var(--color-foreground)'
+                  }}
                   placeholder="••••••••"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-zinc-500 hover:text-zinc-300"
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center transition-opacity hover:opacity-80"
+                  style={{ color: 'var(--color-muted-foreground)' }}
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -298,7 +311,7 @@ export default function LoginPage() {
             {requires2FA && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-bold text-zinc-300">
+                  <label className="block text-sm font-bold" style={{ color: 'var(--color-foreground)' }}>
                     Two-Factor Authentication Code
                   </label>
                   <button
@@ -308,7 +321,8 @@ export default function LoginPage() {
                       setFormData({ ...formData, totpToken: '' })
                       dispatch(setError(null))
                     }}
-                    className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+                    className="text-xs transition-opacity hover:opacity-80"
+                    style={{ color: 'var(--color-muted-foreground)' }}
                   >
                     Cancel
                   </button>
@@ -322,7 +336,12 @@ export default function LoginPage() {
                     required={requires2FA}
                     value={formData.totpToken}
                     onChange={(e) => setFormData({ ...formData, totpToken: e.target.value.replace(/\D/g, '').slice(0, 6) })}
-                    className="w-full pl-12 pr-4 py-3 bg-zinc-800 border border-indigo-600 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 transition-colors font-mono text-lg tracking-widest text-center"
+                    className="w-full pl-12 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-colors font-mono text-lg tracking-widest text-center"
+                    style={{
+                      backgroundColor: 'var(--color-muted)',
+                      borderColor: '#6366f1',
+                      color: 'var(--color-foreground)'
+                    }}
                     placeholder="000000"
                     maxLength={6}
                     autoComplete="one-time-code"
@@ -331,15 +350,15 @@ export default function LoginPage() {
                     autoFocus
                   />
                 </div>
-                <p className="text-xs text-zinc-500 mt-1">
+                <p className="text-xs mt-1" style={{ color: 'var(--color-muted-foreground)' }}>
                   Enter the 6-digit code from your authenticator app
                 </p>
               </div>
             )}
 
             <div className="flex items-center justify-between text-sm">
-              <label className="flex items-center gap-2 text-zinc-400 cursor-pointer">
-                <input type="checkbox" className="rounded border-zinc-700 bg-zinc-800" />
+              <label className="flex items-center gap-2 cursor-pointer" style={{ color: 'var(--color-muted-foreground)' }}>
+                <input type="checkbox" className="rounded" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-muted)' }} />
                 <span>Remember me</span>
               </label>
               {backendConfig?.enablePasswordRecovery && (
@@ -358,7 +377,7 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-6 text-center text-sm text-zinc-400">
+          <div className="mt-6 text-center text-sm" style={{ color: 'var(--color-muted-foreground)' }}>
             Don't have an account?{' '}
             <Link href="/register" className="text-indigo-400 hover:text-indigo-300 font-medium">
               Sign up

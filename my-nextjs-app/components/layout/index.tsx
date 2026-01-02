@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { 
   ChevronDown, 
   ChevronRight, 
@@ -13,6 +14,9 @@ import {
   type LucideIcon
 } from 'lucide-react'
 import { getIcon } from '@/lib/iconMapper'
+import { useAppDispatch } from '@/lib/redux/hooks'
+import { logout } from '@/lib/redux/slices/authSlice'
+import { clearNavigation } from '@/lib/redux/slices/navigationSlice'
 
 interface NavItem {
   id: string
@@ -39,7 +43,12 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ item, depth = 0 }) => {
 
   const content = (
     <>
-      <div className={`p-1.5 rounded-md transition-colors ${item.type === 'section' ? 'bg-transparent' : 'bg-zinc-100/80 dark:bg-zinc-800 group-hover:bg-white group-hover:shadow-sm dark:group-hover:bg-zinc-700'}`}>
+      <div 
+        className={`p-1.5 rounded-md transition-colors ${item.type === 'section' ? 'bg-transparent' : ''}`}
+        style={item.type !== 'section' ? { 
+          backgroundColor: 'var(--sidebar-hover-bg)' 
+        } : {}}
+      >
         <Icon size={16} />
       </div>
       <div className="flex-1 text-left truncate flex items-center gap-2">
@@ -51,7 +60,7 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ item, depth = 0 }) => {
         )}
       </div>
       {hasChildren && (
-        <div className="text-zinc-400 dark:text-zinc-500">
+        <div style={{ color: 'var(--sidebar-foreground)', opacity: 0.6 }}>
           {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         </div>
       )}
@@ -65,9 +74,12 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ item, depth = 0 }) => {
           onClick={() => setIsOpen(!isOpen)}
           className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm font-medium group
             ${depth === 0 ? 'mb-1' : 'mt-0.5'}
-            ${item.type === 'section' ? 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100' : 'text-zinc-700 hover:bg-zinc-100/80 hover:shadow-sm dark:text-zinc-300 dark:hover:bg-zinc-800'}
           `}
-          style={{ paddingLeft: `${(depth * 16) + 12}px` }}
+          style={{ 
+            paddingLeft: `${(depth * 16) + 12}px`,
+            color: 'var(--sidebar-foreground)',
+            backgroundColor: item.type !== 'section' ? 'var(--sidebar-hover-bg)' : 'transparent'
+          }}
         >
           {content}
         </button>
@@ -76,9 +88,12 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ item, depth = 0 }) => {
           href={item.path || item.href || '#'}
           className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm font-medium group
             ${depth === 0 ? 'mb-1' : 'mt-0.5'}
-            text-zinc-700 hover:bg-zinc-100/80 hover:shadow-sm dark:text-zinc-300 dark:hover:bg-zinc-800
           `}
-          style={{ paddingLeft: `${(depth * 16) + 12}px` }}
+          style={{ 
+            paddingLeft: `${(depth * 16) + 12}px`,
+            color: 'var(--sidebar-foreground)',
+            backgroundColor: 'var(--sidebar-hover-bg)'
+          }}
         >
           {content}
         </Link>
@@ -86,7 +101,10 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ item, depth = 0 }) => {
 
       {hasChildren && isOpen && (
         <div className="relative">
-          <div className="absolute left-6 top-0 bottom-0 w-px bg-zinc-200/80 dark:bg-zinc-800 ml-[-4px]" />
+          <div 
+            className="absolute left-6 top-0 bottom-0 w-px ml-[-4px]" 
+            style={{ backgroundColor: 'var(--sidebar-border)' }}
+          />
           {item.children!.map(child => (
             <SidebarItem key={child.id} item={child} depth={depth + 1} />
           ))}
@@ -108,49 +126,94 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ navTree, user, isOpen, onClose }) => {
+  const dispatch = useAppDispatch()
+  const router = useRouter()
+  
   const handleLogout = () => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
-      window.location.href = '/login'
-    }
+    dispatch(logout())
+    dispatch(clearNavigation())
+    router.push('/login')
   }
 
   return (
-    <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-zinc-900 border-r border-zinc-200/80 dark:border-zinc-800 transition-transform lg:translate-x-0 shadow-xl shadow-zinc-900/5 dark:shadow-none ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+    <aside 
+      className={`fixed inset-y-0 left-0 z-50 w-64 border-r transition-transform lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
+      style={{
+        backgroundColor: 'var(--sidebar-background)',
+        borderColor: 'var(--sidebar-border)'
+      }}
+    >
       <div className="flex flex-col h-full">
         {/* Sidebar Header: Branding */}
-        <Link href="/" className="h-16 flex items-center px-6 border-b border-zinc-200/80 dark:border-zinc-800 gap-3 bg-gradient-to-b from-white to-zinc-50/50 dark:from-zinc-900 dark:to-zinc-900 hover:bg-zinc-50/80 dark:hover:bg-zinc-800/50 transition-colors cursor-pointer">
-          <div className="w-8 h-8 bg-gradient-to-br from-indigo-600 to-indigo-500 rounded-lg flex items-center justify-center text-white shadow-lg shadow-indigo-500/30 dark:shadow-indigo-500/20 transform -rotate-3">
+        <Link 
+          href="/" 
+          className="h-16 flex items-center px-6 border-b gap-3 hover:opacity-80 transition-opacity cursor-pointer"
+          style={{ borderColor: 'var(--sidebar-border)' }}
+        >
+          <div className="w-8 h-8 bg-gradient-to-br from-indigo-600 to-indigo-500 rounded-lg flex items-center justify-center text-white shadow-lg transform -rotate-3">
             <ShieldCheck size={20} />
           </div>
-          <span className="font-black tracking-tighter text-xl uppercase italic text-zinc-900 dark:text-white">Griffion</span>
+          <span 
+            className="font-black tracking-tighter text-xl uppercase italic"
+            style={{ color: 'var(--sidebar-foreground)' }}
+          >
+            Griffion
+          </span>
         </Link>
 
         {/* Navigation Tree */}
         <nav className="flex-1 overflow-y-auto py-6 px-3 custom-scrollbar">
           <div className="px-3 mb-2">
-            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Main Menu</span>
+            <span 
+              className="text-[10px] font-black uppercase tracking-widest opacity-50"
+              style={{ color: 'var(--sidebar-foreground)' }}
+            >
+              Main Menu
+            </span>
           </div>
-          {navTree.map(item => (
-            <SidebarItem key={item.id} item={item} />
-          ))}
+          {navTree && navTree.length > 0 ? (
+            navTree.map(item => (
+              <SidebarItem key={item.id} item={item} />
+            ))
+          ) : (
+            <div className="px-3 py-4 text-center text-xs text-zinc-500">
+              No navigation items available
+            </div>
+          )}
         </nav>
 
         {/* Sidebar Footer: User Name beside Logout Icon */}
-        <div className="p-4 border-t border-zinc-200/80 dark:border-zinc-800 bg-gradient-to-b from-white to-zinc-50/30 dark:from-zinc-900 dark:to-zinc-900">
-          <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-zinc-100/50 dark:bg-zinc-800/50 border border-zinc-200/50 dark:border-transparent hover:border-zinc-300 dark:hover:border-zinc-700 transition-all shadow-sm">
+        <div 
+          className="p-4 border-t"
+          style={{ borderColor: 'var(--sidebar-border)' }}
+        >
+          <div 
+            className="flex items-center justify-between px-3 py-2 rounded-xl border hover:opacity-90 transition-all"
+            style={{
+              backgroundColor: 'var(--sidebar-hover-bg)',
+              borderColor: 'var(--sidebar-border)'
+            }}
+          >
             <div className="flex flex-col min-w-0">
-              <span className="text-sm font-bold truncate text-zinc-900 dark:text-zinc-100">
+              <span 
+                className="text-sm font-bold truncate"
+                style={{ color: 'var(--sidebar-foreground)' }}
+              >
                 {user?.firstName || ''} {user?.lastName || ''}
               </span>
-              <span className="text-[10px] text-zinc-500 dark:text-zinc-400 uppercase font-black tracking-tighter">
+              <span 
+                className="text-[10px] uppercase font-black tracking-tighter opacity-60"
+                style={{ color: 'var(--sidebar-foreground)' }}
+              >
                 {user?.role || 'User'}
               </span>
             </div>
             <button 
               onClick={handleLogout}
-              className="p-2 text-zinc-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors"
+              className="p-2 rounded-lg transition-colors hover:opacity-80"
+              style={{ 
+                color: 'var(--sidebar-foreground)',
+              }}
               title="Logout"
             >
               <LogOut size={18} />
@@ -178,18 +241,28 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, onToggleSidebar, theme, onToggleTheme }) => {
   return (
-    <header className="h-16 bg-white/90 dark:bg-zinc-900/80 backdrop-blur-xl border-b border-zinc-200/80 dark:border-zinc-800 sticky top-0 z-40 px-4 md:px-8 shadow-sm shadow-zinc-900/5 dark:shadow-none">
+    <header 
+      className="h-16 backdrop-blur-xl border-b sticky top-0 z-40 px-4 md:px-8"
+      style={{
+        backgroundColor: 'var(--navbar-background)',
+        borderColor: 'var(--navbar-border)'
+      }}
+    >
       <div className="h-full flex items-center justify-between gap-4">
         <div className="flex items-center gap-4 flex-1">
           <button 
             onClick={onToggleSidebar}
-            className="p-2 hover:bg-zinc-100/80 dark:hover:bg-zinc-800 rounded-lg transition-colors lg:hidden text-zinc-700 dark:text-zinc-300"
+            className="p-2 rounded-lg transition-colors lg:hidden"
+            style={{ color: 'var(--navbar-foreground)' }}
           >
             <Menu size={20} />
           </button>
           
           <div className="flex items-center gap-2">
-            <span className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-500 italic">
+            <span 
+              className="text-xs font-black uppercase tracking-[0.2em] italic opacity-60"
+              style={{ color: 'var(--navbar-foreground)' }}
+            >
               Workspace
             </span>
           </div>
@@ -198,7 +271,11 @@ export const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, onToggleSidebar, 
         <div className="flex items-center gap-2 md:gap-4">
           <button 
             onClick={onToggleTheme}
-            className="p-2 text-zinc-600 dark:text-zinc-500 hover:bg-zinc-100/80 dark:hover:bg-zinc-800 rounded-xl transition-all border border-zinc-200/50 dark:border-transparent hover:border-zinc-300 dark:hover:border-zinc-700 shadow-sm hover:shadow"
+            className="p-2 rounded-xl transition-all border shadow-sm hover:shadow"
+            style={{
+              color: 'var(--navbar-foreground)',
+              borderColor: 'var(--navbar-border)'
+            }}
           >
             {theme === 'dark' ? (
               <Sun size={20} className="text-amber-500" />

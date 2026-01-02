@@ -2,6 +2,7 @@ import { createAsyncThunk } from '@reduxjs/toolkit'
 import * as api from '../apiService'
 import { LoginCredentials, RegisterData } from '../apiService'
 import type { NavItem } from '@/components/layout'
+import { setNavigation, setNavigationLoading, setNavigationError } from './slices/navigationSlice'
 
 // Transform backend navigation format to frontend NavItem format
 const transformNavigationTree = (nodes: any[]): NavItem[] => {
@@ -65,15 +66,20 @@ export const fetchUserProfile = createAsyncThunk(
 // Navigation thunks
 export const fetchNavigation = createAsyncThunk(
   'navigation/fetch',
-  async (_, { rejectWithValue }) => {
+  async (_, { dispatch, rejectWithValue }) => {
     try {
+      dispatch(setNavigationLoading(true))
       const response = await api.getNavigation()
       if (response.success && response.data) {
         // Transform backend format to frontend NavItem format
-        return transformNavigationTree(response.data)
+        const transformedData = transformNavigationTree(response.data)
+        dispatch(setNavigation(transformedData))
+        return transformedData
       }
+      dispatch(setNavigationError(response.error || 'Failed to fetch navigation'))
       return rejectWithValue(response.error || 'Failed to fetch navigation')
     } catch (error: any) {
+      dispatch(setNavigationError(error.message || 'Failed to fetch navigation'))
       return rejectWithValue(error.message || 'Failed to fetch navigation')
     }
   }
