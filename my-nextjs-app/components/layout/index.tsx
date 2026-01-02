@@ -3,31 +3,24 @@
 import React, { useState } from 'react'
 import Link from 'next/link'
 import { 
-  LayoutDashboard, 
-  Users, 
-  Settings, 
   ChevronDown, 
   ChevronRight, 
   LogOut, 
-  Bell, 
   Menu,
   ShieldCheck,
   Moon, 
   Sun,
-  Layers,
-  Folder,
-  FileText,
-  CreditCard,
-  History,
-  LifeBuoy
+  type LucideIcon
 } from 'lucide-react'
+import { getIcon } from '@/lib/iconMapper'
 
 interface NavItem {
   id: string
   name: string
   type: 'page' | 'section'
-  icon: any
+  icon: string | LucideIcon
   isPublic: boolean
+  path?: string
   href?: string
   children?: NavItem[]
 }
@@ -40,7 +33,9 @@ interface SidebarItemProps {
 const SidebarItem: React.FC<SidebarItemProps> = ({ item, depth = 0 }) => {
   const [isOpen, setIsOpen] = useState(true)
   const hasChildren = item.children && item.children.length > 0
-  const Icon = item.icon
+  
+  // Get icon component - handle both string names and direct components
+  const Icon = typeof item.icon === 'string' ? getIcon(item.icon) : item.icon
 
   const content = (
     <>
@@ -78,7 +73,7 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ item, depth = 0 }) => {
         </button>
       ) : (
         <Link
-          href={item.href || '#'}
+          href={item.path || item.href || '#'}
           className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm font-medium group
             ${depth === 0 ? 'mb-1' : 'mt-0.5'}
             text-zinc-700 hover:bg-zinc-100/80 hover:shadow-sm dark:text-zinc-300 dark:hover:bg-zinc-800
@@ -104,10 +99,10 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ item, depth = 0 }) => {
 interface SidebarProps {
   navTree: NavItem[]
   user: {
-    firstName: string
-    lastName: string
-    role: string
-  }
+    firstName?: string
+    lastName?: string
+    role?: string
+  } | null
   isOpen: boolean
   onClose: () => void
 }
@@ -147,10 +142,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ navTree, user, isOpen, onClose
           <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-zinc-100/50 dark:bg-zinc-800/50 border border-zinc-200/50 dark:border-transparent hover:border-zinc-300 dark:hover:border-zinc-700 transition-all shadow-sm">
             <div className="flex flex-col min-w-0">
               <span className="text-sm font-bold truncate text-zinc-900 dark:text-zinc-100">
-                {user.firstName} {user.lastName}
+                {user?.firstName || ''} {user?.lastName || ''}
               </span>
               <span className="text-[10px] text-zinc-500 dark:text-zinc-400 uppercase font-black tracking-tighter">
-                {user.role}
+                {user?.role || 'User'}
               </span>
             </div>
             <button 
@@ -217,39 +212,5 @@ export const Navbar: React.FC<NavbarProps> = ({ isSidebarOpen, onToggleSidebar, 
   )
 }
 
-// Default navigation tree
-export const DEFAULT_NAV_TREE: NavItem[] = [
-  { id: '1', name: 'Dashboard', type: 'page', icon: LayoutDashboard, isPublic: false, href: '/dashboard' },
-  { 
-    id: '5', 
-    name: 'Help Center', 
-    type: 'page', 
-    icon: LifeBuoy, 
-    isPublic: true,
-    href: '/help-center'
-  },
-  { 
-    id: '2', 
-    name: 'Management', 
-    type: 'section', 
-    icon: Folder,
-    isPublic: false,
-    children: [
-      { id: '2-1', name: 'User Directory', type: 'page', icon: Users, isPublic: false, href: '/management/user-directory' },
-      { id: '2-2', name: 'Audit Logs', type: 'page', icon: History, isPublic: false, href: '/management/audit-logs' },
-      { 
-        id: '2-3', 
-        name: 'Infrastructure', 
-        type: 'section',
-        icon: Layers,
-        isPublic: false,
-        children: [
-          { id: '2-3-1', name: 'Database', type: 'page', icon: FileText, isPublic: false, href: '/management/infrastructure/database' },
-          { id: '2-3-2', name: 'API Keys', type: 'page', icon: ShieldCheck, isPublic: false, href: '/management/infrastructure/api-keys' }
-        ]
-      }
-    ]
-  },
-  { id: '3', name: 'Billing', type: 'page', icon: CreditCard, isPublic: false, href: '/billing' },
-  { id: '4', name: 'Settings', type: 'page', icon: Settings, isPublic: false, href: '/settings' },
-]
+// Export types for use in other components
+export type { NavItem }

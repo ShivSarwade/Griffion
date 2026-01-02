@@ -2,37 +2,35 @@
 
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Sidebar, Navbar, DEFAULT_NAV_TREE } from '@/components/layout'
+import { Sidebar, Navbar } from '@/components/layout'
+import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks'
+import { selectUser, selectIsAuthenticated } from '@/lib/redux/slices/authSlice'
+import { selectNavigation } from '@/lib/redux/slices/navigationSlice'
+import { selectTheme, selectSidebarOpen, toggleTheme, toggleSidebar } from '@/lib/redux/slices/configSlice'
+import { fetchNavigation } from '@/lib/redux/thunks'
 
 export default function AuditLogsPage() {
   const router = useRouter()
-  const [isSidebarOpen, setSidebarOpen] = useState(true)
-  const [theme, setTheme] = useState<'light' | 'dark'>('dark')
-  const [user, setUser] = useState<any>(null)
+  const dispatch = useAppDispatch()
+  
+  const user = useAppSelector(selectUser)
+  const isAuthenticated = useAppSelector(selectIsAuthenticated)
+  const navTree = useAppSelector(selectNavigation) || []
+  const isSidebarOpen = useAppSelector(selectSidebarOpen)
+  const theme = useAppSelector(selectTheme)
+  
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     setMounted(true)
     
-    if (typeof window !== 'undefined') {
-      const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null
-      if (savedTheme) {
-        setTheme(savedTheme)
-      }
-
-      const token = localStorage.getItem('token')
-      const userData = localStorage.getItem('user')
-      
-      if (!token) {
-        router.push('/login')
-        return
-      }
-
-      if (userData) {
-        setUser(JSON.parse(userData))
-      }
+    if (!isAuthenticated) {
+      router.push('/login')
+      return
     }
-  }, [router])
+
+    dispatch(fetchNavigation())
+  }, [router, isAuthenticated, dispatch])
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -41,12 +39,15 @@ export default function AuditLogsPage() {
       } else {
         document.documentElement.classList.remove('dark')
       }
-      localStorage.setItem('theme', theme)
     }
   }, [theme])
 
   const handleToggleTheme = () => {
-    setTheme(prev => prev === 'dark' ? 'light' : 'dark')
+    dispatch(toggleTheme())
+  }
+
+  const handleToggleSidebar = () => {
+    dispatch(toggleSidebar())
   }
 
   if (!mounted || !user) {
@@ -60,16 +61,16 @@ export default function AuditLogsPage() {
   return (
     <div className={`min-h-screen flex ${theme === 'dark' ? 'bg-zinc-950 text-zinc-100 dark' : 'bg-gradient-to-br from-zinc-50 via-white to-zinc-100/50 text-zinc-900'}`}>
       <Sidebar 
-        navTree={DEFAULT_NAV_TREE}
+        navTree={navTree}
         user={user}
         isOpen={isSidebarOpen}
-        onClose={() => setSidebarOpen(false)}
+        onClose={handleToggleSidebar}
       />
 
       <div className={`flex-1 flex flex-col min-w-0 transition-all ${isSidebarOpen ? 'lg:pl-64' : ''}`}>
         <Navbar 
           isSidebarOpen={isSidebarOpen}
-          onToggleSidebar={() => setSidebarOpen(!isSidebarOpen)}
+          onToggleSidebar={handleToggleSidebar}
           theme={theme}
           onToggleTheme={handleToggleTheme}
         />
