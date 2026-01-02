@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { ShieldCheck, Mail, Lock, Eye, EyeOff, User } from 'lucide-react'
 import Link from 'next/link'
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks'
-import { setCredentials, setError, setLoading } from '@/lib/redux/slices/authSlice'
+import { setCredentials, setError, setLoading, selectIsAuthenticated } from '@/lib/redux/slices/authSlice'
 import { selectAuthLoading, selectAuthError } from '@/lib/redux/slices/authSlice'
 import { selectTheme } from '@/lib/redux/slices/configSlice'
 import * as api from '@/lib/apiService'
@@ -17,6 +17,7 @@ export default function LoginPage() {
   const loading = useAppSelector(selectAuthLoading)
   const error = useAppSelector(selectAuthError)
   const theme = useAppSelector(selectTheme)
+  const isAuthenticated = useAppSelector(selectIsAuthenticated)
   
   const [formData, setFormData] = useState({
     identifier: '',
@@ -71,6 +72,12 @@ export default function LoginPage() {
   }
 
   useEffect(() => {
+    // Redirect if already authenticated
+    if (isAuthenticated) {
+      router.push('/dashboard')
+      return
+    }
+
     // Reset loading state when component mounts
     dispatch(setLoading(false))
     dispatch(setError(null))
@@ -95,7 +102,7 @@ export default function LoginPage() {
       }
     }
     fetchConfig()
-  }, [dispatch])
+  }, [dispatch, isAuthenticated, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -235,7 +242,7 @@ export default function LoginPage() {
         <div className="border rounded-2xl p-8 shadow-xl" style={{ backgroundColor: 'var(--color-card)', borderColor: 'var(--color-border)' }}>
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
-              <div className="bg-red-950/30 border border-red-800 text-red-400 px-4 py-3 rounded-lg text-sm">
+              <div className="px-4 py-3 rounded-lg text-sm font-medium border-2" style={{ backgroundColor: '#fee2e2', borderColor: '#ef4444', color: '#991b1b' }}>
                 {error}
               </div>
             )}

@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { ShieldCheck, Mail, Lock, Eye, EyeOff, User } from 'lucide-react'
 import Link from 'next/link'
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks'
-import { setCredentials, setError, setLoading } from '@/lib/redux/slices/authSlice'
+import { setCredentials, setError, setLoading, selectIsAuthenticated } from '@/lib/redux/slices/authSlice'
 import { selectAuthLoading, selectAuthError } from '@/lib/redux/slices/authSlice'
 import { selectTheme } from '@/lib/redux/slices/configSlice'
 import * as api from '@/lib/apiService'
@@ -19,6 +19,7 @@ export default function DynamicRegisterPage() {
   const loading = useAppSelector(selectAuthLoading)
   const error = useAppSelector(selectAuthError)
   const theme = useAppSelector(selectTheme)
+  const isAuthenticated = useAppSelector(selectIsAuthenticated)
   
   const [formData, setFormData] = React.useState({
     firstName: '',
@@ -32,6 +33,13 @@ export default function DynamicRegisterPage() {
   const [validationErrors, setValidationErrors] = React.useState<{[key: string]: string}>({})
 
   const primaryIdentifier = process.env.NEXT_PUBLIC_PRIMARY_IDENTIFIER || 'email'
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push('/dashboard')
+    }
+  }, [isAuthenticated, router])
 
   // Validation functions
   const validateEmail = (email: string): boolean => {
@@ -152,7 +160,7 @@ export default function DynamicRegisterPage() {
         <div className="rounded-2xl p-8 shadow-xl border" style={{ backgroundColor: 'var(--color-card)', borderColor: 'var(--color-border)' }}>
           <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
-              <div className="bg-red-950/30 border border-red-800 text-red-400 px-4 py-3 rounded-lg text-sm">
+              <div className="px-4 py-3 rounded-lg text-sm font-medium border-2" style={{ backgroundColor: '#fee2e2', borderColor: '#ef4444', color: '#991b1b' }}>
                 {error}
               </div>
             )}

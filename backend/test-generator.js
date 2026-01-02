@@ -39,7 +39,7 @@ const testConfig = {
   adminLastName: 'Administrator',
 
   // Roles
-  roles: [
+    roles: [
     {
       name: 'Admin',
       description: 'System Administrator',
