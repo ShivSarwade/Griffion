@@ -453,12 +453,19 @@ temp/
 
 /**
  * Recursively copy directory
+ * Excludes: my-nextjs-app folder from templates
  */
 async function copyDirectory(src, dest) {
   await fs.mkdir(dest, { recursive: true });
   const entries = await fs.readdir(src, { withFileTypes: true });
 
   for (const entry of entries) {
+    // Skip my-nextjs-app folder in templates
+    if (entry.name === 'my-nextjs-app') {
+      console.log(`   ⏭️  Skipping: ${entry.name}`);
+      continue;
+    }
+
     const srcPath = path.join(src, entry.name);
     const destPath = path.join(dest, entry.name);
 

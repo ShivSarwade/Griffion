@@ -1,0 +1,104 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+/* Griffion Environment-Driven Branding */
+/* These CSS variables are dynamically set from .env configuration */
+
+:root {
+  /* Brand Colors - Override with env vars */
+  --brand-primary: #4f46e5; /* Default: Indigo 600 */
+  --brand-secondary: #7c3aed; /* Default: Violet 600 */
+  --brand-accent: #0ea5e9; /* Default: Sky 600 */
+  
+  /* Logo */
+  --brand-logo-path: '/logo.svg';
+  
+  /* Theme Colors - Light Mode */
+  --color-background: #ffffff;
+  --color-foreground: #09090b;
+  --color-muted: #f4f4f5;
+  --color-muted-foreground: #71717a;
+  --color-border: #e4e4e7;
+  --color-card: #ffffff;
+  --color-card-foreground: #09090b;
+  
+  /* Sidebar - Light */
+  --sidebar-background: #f9fafb;
+  --sidebar-foreground: #111827;
+  --sidebar-border: #e5e7eb;
+  --sidebar-active-bg: #e0e7ff;
+  --sidebar-active-text: #4f46e5;
+  --sidebar-hover-bg: #f3f4f6;
+  
+  /* Navbar - Light */
+  --navbar-background: #ffffff;
+  --navbar-foreground: #111827;
+  --navbar-border: #e5e7eb;
+}
+
+[data-theme='dark'],
+.dark {
+  /* Theme Colors - Dark Mode */
+  --color-background: #0a0a0a;
+  --color-foreground: #fafafa;
+  --color-muted: #1f1f1f;
+  --color-muted-foreground: #a1a1aa;
+  --color-border: #27272a;
+  --color-card: #171717;
+  --color-card-foreground: #fafafa;
+  
+  /* Sidebar - Dark */
+  --sidebar-background: #0f0f0f;
+  --sidebar-foreground: #fafafa;
+  --sidebar-border: #262626;
+  --sidebar-active-bg: #1f1f1f;
+  --sidebar-active-text: #818cf8;
+  --sidebar-hover-bg: #1a1a1a;
+  
+  /* Navbar - Dark */
+  --navbar-background: #0a0a0a;
+  --navbar-foreground: #fafafa;
+  --navbar-border: #262626;
+}
+
+/* Apply brand colors to utility classes */
+.brand-primary {
+  color: var(--brand-primary);
+}
+
+.brand-primary-bg {
+  background-color: var(--brand-primary);
+}
+
+.brand-secondary {
+  color: var(--brand-secondary);
+}
+
+.brand-secondary-bg {
+  background-color: var(--brand-secondary);
+}
+
+.brand-accent {
+  color: var(--brand-accent);
+}
+
+.brand-accent-bg {
+  background-color: var(--brand-accent);
+}
+
+/* Gradient utilities with brand colors */
+.brand-gradient {
+  background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
+}
+
+.brand-gradient-text {
+  background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+

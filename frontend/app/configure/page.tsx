@@ -44,14 +44,50 @@ import {
   Folder,
   Eye,
   Wand2,
-  Link as LinkIcon
+  Link as LinkIcon,
+  LayoutDashboard,
+  Home,
+  User,
+  File,
+  Bell,
+  BarChart,
+  ShoppingCart,
+  Package,
+  Upload,
+  Download as DownloadIcon,
+  Activity,
+  Archive,
+  Bookmark,
+  Calendar,
+  Camera,
+  Clock,
+  CreditCard,
+  Heart,
+  Image,
+  Map,
+  MessageCircle,
+  PieChart,
+  Search,
+  Star,
+  Tag,
+  TrendingUp,
+  Video,
+  Zap,
+  LucideIcon
 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import { 
+  setProjectName,
+  setProjectDescription,
+  setAuthor,
   setAuthType, 
   toggle2FA, 
-  setDatabase, 
-  setDefaultTheme, 
+  setDbProvider, 
+  setDefaultTheme,
+  setAdminEmail,
+  setAdminPassword,
+  setAdminFirstName,
+  setAdminLastName, 
   nextStep, 
   prevStep, 
   addRole as addRoleAction, 
@@ -68,6 +104,96 @@ import {
 
 // --- API Helper ---
 const apiKey = ""; 
+
+// Icon mapping helper
+const getIconComponent = (iconName?: string): LucideIcon => {
+  const iconMap: Record<string, LucideIcon> = {
+    'layout-dashboard': LayoutDashboard,
+    'home': Home,
+    'users': Users,
+    'user': User,
+    'settings': Settings,
+    'folder': Folder,
+    'file': File,
+    'file-text': FileText,
+    'shield': Shield,
+    'lock': Lock,
+    'key': Key,
+    'mail': Mail,
+    'bell': Bell,
+    'chart-bar': BarChart,
+    'shopping-cart': ShoppingCart,
+    'package': Package,
+    'upload': Upload,
+    'download': DownloadIcon,
+    'activity': Activity,
+    'archive': Archive,
+    'bookmark': Bookmark,
+    'calendar': Calendar,
+    'camera': Camera,
+    'clock': Clock,
+    'credit-card': CreditCard,
+    'database': Database,
+    'globe': Globe,
+    'heart': Heart,
+    'image': Image,
+    'layers': Layers,
+    'map': Map,
+    'message-circle': MessageCircle,
+    'pie-chart': PieChart,
+    'search': Search,
+    'star': Star,
+    'tag': Tag,
+    'trending-up': TrendingUp,
+    'video': Video,
+    'zap': Zap,
+  };
+  
+  return iconMap[iconName || ''] || (iconName ? FileText : FileText);
+};
+
+// Available icons for navigation
+const AVAILABLE_ICONS = [
+  { value: 'layout-dashboard', label: 'Dashboard' },
+  { value: 'home', label: 'Home' },
+  { value: 'users', label: 'Users' },
+  { value: 'user', label: 'User' },
+  { value: 'settings', label: 'Settings' },
+  { value: 'folder', label: 'Folder' },
+  { value: 'file', label: 'File' },
+  { value: 'file-text', label: 'File Text' },
+  { value: 'shield', label: 'Shield' },
+  { value: 'lock', label: 'Lock' },
+  { value: 'key', label: 'Key' },
+  { value: 'mail', label: 'Mail' },
+  { value: 'bell', label: 'Bell' },
+  { value: 'chart-bar', label: 'Chart Bar' },
+  { value: 'shopping-cart', label: 'Shopping Cart' },
+  { value: 'package', label: 'Package' },
+  { value: 'upload', label: 'Upload' },
+  { value: 'download', label: 'Download' },
+  { value: 'activity', label: 'Activity' },
+  { value: 'archive', label: 'Archive' },
+  { value: 'bookmark', label: 'Bookmark' },
+  { value: 'calendar', label: 'Calendar' },
+  { value: 'camera', label: 'Camera' },
+  { value: 'clock', label: 'Clock' },
+  { value: 'credit-card', label: 'Credit Card' },
+  { value: 'database', label: 'Database' },
+  { value: 'globe', label: 'Globe' },
+  { value: 'heart', label: 'Heart' },
+  { value: 'image', label: 'Image' },
+  { value: 'layers', label: 'Layers' },
+  { value: 'map', label: 'Map' },
+  { value: 'message-circle', label: 'Message' },
+  { value: 'pie-chart', label: 'Pie Chart' },
+  { value: 'search', label: 'Search' },
+  { value: 'star', label: 'Star' },
+  { value: 'tag', label: 'Tag' },
+  { value: 'trending-up', label: 'Trending Up' },
+  { value: 'video', label: 'Video' },
+  { value: 'zap', label: 'Zap' },
+];
 
 async function generateCodeFromConfig(config: any) {
   const systemPrompt = `You are a Senior Fullstack Architect. Generate the "Griffion" platform codebase.
@@ -166,17 +292,16 @@ const Button = ({
 export default function ConfigurePage() {
   // Redux state and dispatch
   const dispatch = useAppDispatch();
-  const config = useAppSelector((state) => state.config);
+  const config = useAppSelector((state: any) => state.config);
   const step = config.currentStep;
   const editingNodeId = config.editingNodeId;
   
   // Local state only for generated code (not persisted)
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [showConfigDebug, setShowConfigDebug] = useState(false);
   const [theme, setTheme] = useState('dark');
 
-  const totalSteps = 4;
+  const totalSteps = 6;
 
   const handleNextStep = () => dispatch(nextStep());
   const handlePrevStep = () => dispatch(prevStep());
@@ -201,18 +326,136 @@ export default function ConfigurePage() {
 
   // Find the editing node from the tree
   const editingNode = editingNodeId ? selectNodeById(config, editingNodeId) : null;
-  const hasPublicRoles = config.roles.some(r => r.registrationType === 'public');
+  const hasPublicRoles = config.roles.some((r: any) => r.registrationType === 'public');
 
   const handleFinalize = async () => {
     setIsGenerating(true);
-    const code = await generateCodeFromConfig(config);
-    setGeneratedCode(code);
-    setIsGenerating(false);
+    
+    try {
+      // Prepare the configuration payload
+      const payload = {
+        // Project Info
+        projectName: config.projectName,
+        projectDescription: config.projectDescription,
+        author: config.author,
+        port: 5000,
+        frontendUrl: 'http://localhost:3000',
+        
+        // Database
+        dbProvider: config.dbProvider,
+        
+        // Authentication
+        primaryIdentifier: config.authType,
+        enable2FA: config.enable2FA,
+        enablePasswordRecovery: true,
+        
+        // Features
+        enableAdminPanel: true,
+        enableRBAC: true,
+        enableGroups: false,
+        enableNavigation: true,
+        
+        // Admin User
+        adminEmail: config.adminEmail,
+        adminPassword: config.adminPassword,
+        adminFirstName: config.adminFirstName,
+        adminLastName: config.adminLastName,
+        
+        // Frontend Settings
+        defaultTheme: config.defaultTheme,
+        
+        // Roles - enhance with static properties
+        roles: config.roles.map((role, index) => ({
+          name: role.name,
+          description: role.description,
+          registrationType: role.registrationType,
+          isSystemRole: role.name === 'Admin',
+          permissions: role.name === 'Admin' ? ['*'] : [],
+          default: role.registrationType === 'public' && 
+                   index === config.roles.findIndex((r: any) => r.registrationType === 'public')
+        })),
+        
+        // Navigation Tree - convert role IDs to role names and add static properties
+        navigationTree: convertNavTreeForAPI(config.navTree, config.roles)
+      };
+      
+      // Step 1: Call the API to generate full-stack project
+      const response = await fetch('http://localhost:5000/api/download/generate-fullstack', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to generate project' }));
+        throw new Error(errorData.message || 'Failed to generate project');
+      }
+      
+      // Parse JSON response
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.message || 'Failed to generate project');
+      }
+      
+      // Step 2: Download the ZIP file using the downloadUrl
+      const downloadUrl = `http://localhost:5000${result.data.downloadUrl}`;
+      
+      // Trigger download
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = result.data.zipFilename || `${config.projectName.toLowerCase().replace(/\s+/g, '-')}-fullstack.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Show success message
+      alert('✅ Project generated successfully! Check your downloads.');
+      
+    } catch (error) {
+      console.error('Error generating project:', error);
+      alert('❌ Failed to generate project. Please check the console for details.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+  
+  // Helper function to convert navigation tree for API
+  const convertNavTreeForAPI = (nodes: NavNode[], roles: any[], order = 0): any[] => {
+    return nodes.map((node, index) => {
+      const roleNames = node.accessRoles.map(roleId => {
+        const role = roles.find((r: any) => r.id === roleId);
+        return role ? role.name : roleId;
+      });
+      
+      const apiNode: any = {
+        id: node.name.toLowerCase().replace(/\s+/g, '_'),
+        name: node.name,
+        type: node.type,
+        icon: node.icon || (node.type === 'section' ? 'folder' : 'file'),
+        isPublic: false,
+        order: order + index,
+        accessRoles: roleNames
+      };
+      
+      if (node.type === 'page' && node.path) {
+        apiNode.path = node.path;
+      }
+      
+      if (node.children && node.children.length > 0) {
+        apiNode.children = convertNavTreeForAPI(node.children, roles, 0);
+      }
+      
+      return apiNode;
+    });
   };
 
   // --- Recursive Tree Component ---
   const TreeItem = ({ node, depth = 0 }: { node: NavNode; depth?: number }) => {
     const [isExpanded, setIsExpanded] = useState(true);
+    const IconComponent = getIconComponent(node.icon);
 
     return (
       <div className="select-none">
@@ -232,7 +475,7 @@ export default function ConfigurePage() {
           )}
 
           <div className={`p-1.5 rounded-md ${node.type === 'section' ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30' : 'text-zinc-500 bg-zinc-100 dark:bg-zinc-800'}`}>
-            {node.type === 'section' ? <Folder size={14} /> : <FileText size={14} />}
+            <IconComponent size={14} />
           </div>
 
           <div className="flex-1 flex items-center justify-between min-w-0">
@@ -275,6 +518,51 @@ export default function ConfigurePage() {
   const renderStep = () => {
     switch (step) {
       case 1:
+        return (
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div>
+              <h2 className="text-3xl md:text-4xl font-black tracking-tighter uppercase italic text-zinc-900 dark:text-white">Project Information</h2>
+              <p className="text-zinc-500 mt-2 text-xs font-bold uppercase tracking-widest">Define your project details and metadata.</p>
+            </div>
+
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-zinc-700 dark:text-zinc-300">Project Name</label>
+                <input
+                  type="text"
+                  value={config.projectName}
+                  onChange={(e) => dispatch(setProjectName(e.target.value))}
+                  placeholder="My Application"
+                  className="w-full px-4 py-3 bg-white dark:bg-zinc-900 border-2 border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-zinc-100 focus:border-indigo-500 focus:outline-none transition-colors"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-zinc-700 dark:text-zinc-300">Project Description</label>
+                <textarea
+                  value={config.projectDescription}
+                  onChange={(e) => dispatch(setProjectDescription(e.target.value))}
+                  placeholder="A full-stack application..."
+                  rows={3}
+                  className="w-full px-4 py-3 bg-white dark:bg-zinc-900 border-2 border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-zinc-100 focus:border-indigo-500 focus:outline-none transition-colors resize-none"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-zinc-700 dark:text-zinc-300">Author Name</label>
+                <input
+                  type="text"
+                  value={config.author}
+                  onChange={(e) => dispatch(setAuthor(e.target.value))}
+                  placeholder="Developer Name"
+                  className="w-full px-4 py-3 bg-white dark:bg-zinc-900 border-2 border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-zinc-100 focus:border-indigo-500 focus:outline-none transition-colors"
+                />
+              </div>
+            </div>
+          </div>
+        );
+
+      case 2:
         return (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div>
@@ -335,7 +623,7 @@ export default function ConfigurePage() {
           </div>
         );
 
-      case 2:
+      case 3:
         return (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div>
@@ -345,8 +633,8 @@ export default function ConfigurePage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div 
-                onClick={() => dispatch(setDatabase('mysql'))}
-                className={`p-6 border-2 rounded-xl transition-all cursor-pointer ${config.database === 'mysql' ? 'border-indigo-600 bg-indigo-50/50 dark:bg-indigo-900/20' : 'border-zinc-200 dark:border-zinc-800'}`}
+                onClick={() => dispatch(setDbProvider('mysql'))}
+                className={`p-6 border-2 rounded-xl transition-all cursor-pointer ${config.dbProvider === 'mysql' ? 'border-indigo-600 bg-indigo-50/50 dark:bg-indigo-900/20' : 'border-zinc-200 dark:border-zinc-800'}`}
               >
                 <div className="p-2 bg-indigo-600 text-white rounded-lg w-fit mb-4">
                   <Database size={24} />
@@ -356,8 +644,8 @@ export default function ConfigurePage() {
               </div>
 
               <div 
-                onClick={() => dispatch(setDatabase('mongodb'))}
-                className={`p-6 border-2 rounded-xl transition-all cursor-pointer ${config.database === 'mongodb' ? 'border-indigo-600 bg-indigo-50/50 dark:bg-indigo-900/20' : 'border-zinc-200 dark:border-zinc-800'}`}
+                onClick={() => dispatch(setDbProvider('mongodb'))}
+                className={`p-6 border-2 rounded-xl transition-all cursor-pointer ${config.dbProvider === 'mongodb' ? 'border-indigo-600 bg-indigo-50/50 dark:bg-indigo-900/20' : 'border-zinc-200 dark:border-zinc-800'}`}
               >
                 <div className="p-2 bg-green-600 text-white rounded-lg w-fit mb-4">
                   <Globe size={24} />
@@ -390,7 +678,94 @@ export default function ConfigurePage() {
           </div>
         );
 
-      case 3:
+      case 4:
+        return (
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div>
+              <h2 className="text-3xl md:text-4xl font-black tracking-tighter uppercase italic text-zinc-900 dark:text-white">Admin Account Setup</h2>
+              <p className="text-zinc-500 mt-2 text-xs font-bold uppercase tracking-widest">Configure the default administrator credentials.</p>
+            </div>
+
+            <div className="p-6 bg-amber-50 dark:bg-amber-900/10 border-2 border-amber-200 dark:border-amber-900/30 rounded-xl">
+              <div className="flex items-start gap-3">
+                <ShieldAlert className="text-amber-600 dark:text-amber-500 flex-shrink-0 mt-1" size={20} />
+                <div className="space-y-1">
+                  <h3 className="font-bold text-amber-900 dark:text-amber-200">Security Notice</h3>
+                  <p className="text-sm text-amber-800 dark:text-amber-300">These credentials will be used to create the initial admin user. Make sure to change them in production!</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-zinc-700 dark:text-zinc-300 flex items-center gap-2">
+                  <Mail size={16} className="text-indigo-600" />
+                  Admin Email
+                </label>
+                <input
+                  type="email"
+                  value={config.adminEmail}
+                  onChange={(e) => dispatch(setAdminEmail(e.target.value))}
+                  placeholder="admin@example.com"
+                  className="w-full px-4 py-3 bg-white dark:bg-zinc-900 border-2 border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-zinc-100 focus:border-indigo-500 focus:outline-none transition-colors"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-zinc-700 dark:text-zinc-300 flex items-center gap-2">
+                  <Lock size={16} className="text-indigo-600" />
+                  Admin Password
+                </label>
+                <input
+                  type="password"
+                  value={config.adminPassword}
+                  onChange={(e) => dispatch(setAdminPassword(e.target.value))}
+                  placeholder="Strong password"
+                  className="w-full px-4 py-3 bg-white dark:bg-zinc-900 border-2 border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-zinc-100 focus:border-indigo-500 focus:outline-none transition-colors font-mono"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-zinc-700 dark:text-zinc-300 flex items-center gap-2">
+                  <UserIcon size={16} className="text-indigo-600" />
+                  First Name
+                </label>
+                <input
+                  type="text"
+                  value={config.adminFirstName}
+                  onChange={(e) => dispatch(setAdminFirstName(e.target.value))}
+                  placeholder="Admin"
+                  className="w-full px-4 py-3 bg-white dark:bg-zinc-900 border-2 border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-zinc-100 focus:border-indigo-500 focus:outline-none transition-colors"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-zinc-700 dark:text-zinc-300 flex items-center gap-2">
+                  <UserIcon size={16} className="text-indigo-600" />
+                  Last Name
+                </label>
+                <input
+                  type="text"
+                  value={config.adminLastName}
+                  onChange={(e) => dispatch(setAdminLastName(e.target.value))}
+                  placeholder="User"
+                  className="w-full px-4 py-3 bg-white dark:bg-zinc-900 border-2 border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-zinc-100 focus:border-indigo-500 focus:outline-none transition-colors"
+                />
+              </div>
+            </div>
+
+            <div className="p-4 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl">
+              <h4 className="text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">Preview Admin User</h4>
+              <div className="space-y-1 text-sm">
+                <p className="text-zinc-600 dark:text-zinc-400"><span className="font-semibold">Name:</span> {config.adminFirstName} {config.adminLastName}</p>
+                <p className="text-zinc-600 dark:text-zinc-400"><span className="font-semibold">Email:</span> {config.adminEmail}</p>
+                <p className="text-zinc-600 dark:text-zinc-400"><span className="font-semibold">Role:</span> Admin (System Role)</p>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 5:
         return (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="flex justify-between items-end">
@@ -404,29 +779,40 @@ export default function ConfigurePage() {
               <Button onClick={addRole} icon={Plus} variant="outline">Add Role</Button>
             </div>
 
+
             <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
               <div className="grid grid-cols-12 bg-zinc-50 dark:bg-zinc-800/50 border-b border-zinc-200 dark:border-zinc-800 px-6 py-3 text-xs font-bold uppercase tracking-wider text-zinc-500">
-                <div className="col-span-5">Role Identity</div>
-                <div className="col-span-4 flex items-center gap-1">Registration Mode</div>
-                <div className="col-span-3 text-right">Actions</div>
+                <div className="col-span-3">Role Name</div>
+                <div className="col-span-4">Description</div>
+                <div className="col-span-3 flex items-center gap-1">Registration Mode</div>
+                <div className="col-span-2 text-right">Actions</div>
               </div>
               
               <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
-                {config.roles.map((role) => (
+                {config.roles.map((role: any) => (
                   <div key={role.id} className="grid grid-cols-12 px-6 py-4 items-center hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition-colors">
-                    <div className="col-span-5 flex items-center gap-3">
+                    <div className="col-span-3 flex items-center gap-3">
                       <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 rounded-lg">
                         <Key size={16} />
                       </div>
                       <input 
                         value={role.name}
                         onChange={(e) => updateRole(role.id, { name: e.target.value })}
-                        placeholder="e.g. Moderator"
+                        placeholder="e.g. Manager"
                         className="bg-transparent font-medium text-zinc-900 dark:text-zinc-100 outline-none w-full border-b border-transparent focus:border-indigo-500 transition-all"
                       />
                     </div>
                     
-                    <div className="col-span-4">
+                    <div className="col-span-4 px-2">
+                      <input 
+                        value={role.description}
+                        onChange={(e) => updateRole(role.id, { description: e.target.value })}
+                        placeholder="Role description..."
+                        className="bg-transparent text-sm text-zinc-600 dark:text-zinc-400 outline-none w-full border-b border-transparent focus:border-indigo-500 transition-all"
+                      />
+                    </div>
+                    
+                    <div className="col-span-3">
                       <div className="flex items-center gap-3">
                         <button 
                           onClick={() => updateRole(role.id, { 
@@ -442,7 +828,7 @@ export default function ConfigurePage() {
                       </div>
                     </div>
 
-                    <div className="col-span-3 text-right">
+                    <div className="col-span-2 text-right">
                       <button 
                         onClick={() => removeRole(role.id)}
                         disabled={config.roles.length <= 1}
@@ -458,7 +844,7 @@ export default function ConfigurePage() {
           </div>
         );
 
-      case 4:
+      case 6:
         return (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="flex justify-between items-start">
@@ -475,6 +861,7 @@ export default function ConfigurePage() {
               </div>
             </div>
 
+
             <div className="grid grid-cols-1 md:grid-cols-5 gap-6 items-start">
               {/* --- Explorer Column --- */}
               <div className="md:col-span-3 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
@@ -487,7 +874,7 @@ export default function ConfigurePage() {
                   </div>
                 </div>
                 <div className="p-4 space-y-1 min-h-[400px] max-h-[600px] overflow-y-auto custom-scrollbar">
-                  {config.navTree.map(node => (
+                  {config.navTree.map((node: NavNode) => (
                     <TreeItem key={node.id} node={node} />
                   ))}
                   {config.navTree.length === 0 && (
@@ -531,13 +918,52 @@ export default function ConfigurePage() {
                         />
                       </div>
 
+                      {editingNode.type === 'page' && (
+                        <div className="space-y-2">
+                          <label className="text-xs font-black uppercase tracking-widest text-zinc-500">
+                            Path
+                          </label>
+                          <input 
+                            value={editingNode.path || ''}
+                            onChange={(e) => handleUpdateNode(editingNode.id, { path: e.target.value })}
+                            placeholder="/path/to/page"
+                            className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-sm font-mono outline-none focus:ring-2 focus:ring-indigo-500"
+                          />
+                          {editingNode.path && (
+                            <div className="p-2 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg">
+                              <div className="flex items-center gap-2 text-xs">
+                                <LinkIcon size={12} className="text-indigo-600 dark:text-indigo-400" />
+                                <span className="font-bold text-indigo-900 dark:text-indigo-200">Full URL:</span>
+                                <code className="text-indigo-700 dark:text-indigo-300 font-mono">http://localhost:3000{editingNode.path}</code>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="space-y-2">
+                        <label className="text-xs font-black uppercase tracking-widest text-zinc-500">
+                          Icon
+                        </label>
+                        <select
+                          value={editingNode.icon || ''}
+                          onChange={(e) => handleUpdateNode(editingNode.id, { icon: e.target.value })}
+                          className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                        >
+                          <option value="">Select icon...</option>
+                          {AVAILABLE_ICONS.map(icon => (
+                            <option key={icon.value} value={icon.value}>{icon.label}</option>
+                          ))}
+                        </select>
+                      </div>
+
                       <div className="space-y-3">
                         <label className="text-xs font-black uppercase tracking-widest text-zinc-500 flex items-center justify-between">
                           Role Access
                           <Tooltip text="Granting access at a Section level usually makes all its nested pages visible to those roles." />
                         </label>
                         <div className="space-y-1">
-                          {config.roles.map(role => {
+                          {config.roles.map((role: any) => {
                             const hasAccess = editingNode.accessRoles.includes(role.id);
                             return (
                               <button
@@ -586,7 +1012,7 @@ export default function ConfigurePage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold italic">Griffion Stack Provisioned</h1>
-              <p className="text-zinc-500">Microservices architecture for {config.database.toUpperCase()} based tenants.</p>
+              <p className="text-zinc-500">Microservices architecture for {config.dbProvider.toUpperCase()} based tenants.</p>
             </div>
             <Button variant="outline" onClick={() => setGeneratedCode(null)}>Modify Specs</Button>
           </div>
@@ -597,7 +1023,7 @@ export default function ConfigurePage() {
                 <h3 className="flex items-center gap-2"><Settings size={18} /> Architecture</h3>
                 <div className="space-y-2 text-[10px] text-zinc-500">
                   <div className="flex justify-between"><span>Auth:</span> <span className="text-zinc-900 dark:text-zinc-100">{config.authType}</span></div>
-                  <div className="flex justify-between"><span>DB Layer:</span> <span className="text-zinc-900 dark:text-zinc-100">{config.database}</span></div>
+                  <div className="flex justify-between"><span>DB Layer:</span> <span className="text-zinc-900 dark:text-zinc-100">{config.dbProvider}</span></div>
                   <div className="flex justify-between"><span>Nav Depth:</span> <span className="text-zinc-900 dark:text-zinc-100">Recursive</span></div>
                 </div>
                 <hr className="border-zinc-200 dark:border-zinc-800" />
@@ -632,14 +1058,6 @@ export default function ConfigurePage() {
           </div>
           <div className="flex items-center gap-4 text-xs font-bold uppercase tracking-widest text-zinc-400">
             <button 
-              onClick={() => setShowConfigDebug(!showConfigDebug)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors text-xs font-bold uppercase tracking-widest text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
-              title="View saved configuration"
-            >
-              <Eye size={14} />
-              <span className="hidden sm:inline">Config</span>
-            </button>
-            <button 
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
               className="p-2 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
               title="Toggle theme"
@@ -647,9 +1065,9 @@ export default function ConfigurePage() {
               {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
             </button>
             <div className="flex items-center gap-3">
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">Step {step}/4</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">Step {step}/6</span>
               <div className="flex gap-1">
-                {[1, 2, 3, 4].map(s => (
+                {[1, 2, 3, 4, 5, 6].map(s => (
                   <div key={s} className={`w-2 h-2 rounded-full transition-colors ${step >= s ? 'bg-indigo-600' : 'bg-zinc-300 dark:bg-zinc-700'}`} />
                 ))}
               </div>

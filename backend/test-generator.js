@@ -1,11 +1,11 @@
 /**
- * Test Script for Griffion Backend Generator
+ * Test Script for Griffion Full-Stack Generator
  * 
- * This script tests the backend generation with a simple configuration
+ * This script tests the full-stack generation (backend + frontend) with a simple configuration
  * Run with: node test-generator.js
  */
 
-const { generateBackend, createZip, cleanup } = require('./src/utils/backendGenerator');
+const { generateFullStack, createZip, cleanup } = require('./src/utils/fullstackGenerator');
 const path = require('path');
 const fs = require('fs').promises;
 
@@ -17,6 +17,7 @@ const testConfig = {
   author: 'Test Developer',
   port: 5000,
   frontendUrl: 'http://localhost:3000',
+  frontendApiUrl: 'http://localhost:5000',
 
   // Database - Change to 'mysql' or 'mongodb'
   dbProvider: 'mysql',  // Options: 'mysql', 'mongodb'
@@ -25,6 +26,14 @@ const testConfig = {
   primaryIdentifier: 'email',
   enable2FA: true,
   enablePasswordRecovery: true,
+
+  // Frontend Configuration
+  defaultTheme: 'light',
+  defaultRole: 'User',
+  primaryColor: '#6366f1',
+  secondaryColor: '#8b5cf6',
+  logoPath: '/logo.png',
+  selfRegisterRoles: 'user,buyer,seller',
 
   // Features
   enableAdminPanel: true,
@@ -59,7 +68,8 @@ const testConfig = {
       description: 'Standard User',
       registrationType: 'public',
       isSystemRole: false,
-      permissions: ['profile.read', 'profile.update']
+      permissions: ['profile.read', 'profile.update'],
+      default:true
     },
     {
       name: 'Buyer',
@@ -125,29 +135,48 @@ const testConfig = {
 };
 
 async function runTest() {
-  console.log('🧪 Starting Griffion Backend Generator Test\n');
+  console.log('🧪 Starting Griffion Full-Stack Generator Test\n');
   console.log('=' .repeat(60));
   
   try {
-    // Step 1: Generate backend
-    console.log('\n📦 Step 1: Generating backend...\n');
-    const projectDir = await generateBackend(testConfig);
+    // Step 1: Generate full-stack project
+    console.log('\n📦 Step 1: Generating full-stack project (backend + frontend)...\n');
+    const projectDir = await generateFullStack(testConfig);
     
-    console.log('\n✅ Backend generated successfully!');
+    console.log('\n✅ Full-stack project generated successfully!');
     console.log(`📁 Location: ${projectDir}`);
     
     // Step 2: Create ZIP
     console.log('\n📦 Step 2: Creating ZIP archive...\n');
-    const zipPath = path.join(__dirname, 'temp', 'test-backend.zip');
+    const zipPath = path.join(__dirname, 'temp', 'test-fullstack.zip');
     await createZip(projectDir, zipPath);
     
     console.log('✅ ZIP created successfully!');
     console.log(`📦 ZIP Location: ${zipPath}`);
     
-    // Step 3: Verify files
-    console.log('\n🔍 Step 3: Verifying generated files...\n');
+    // Step 3: Verify project structure
+    console.log('\n🔍 Step 3: Verifying project structure...\n');
     
-    const requiredFiles = [
+    // Check root-level files
+    const rootFiles = [
+      'README.md',
+      'docker-compose.yml'
+    ];
+    
+    console.log('   Root-level files:');
+    for (const file of rootFiles) {
+      const filePath = path.join(projectDir, file);
+      try {
+        await fs.access(filePath);
+        console.log(`   ✓ ${file}`);
+      } catch {
+        console.log(`   ✗ ${file} - MISSING!`);
+      }
+    }
+    
+    // Check backend directory
+    const backendDir = path.join(projectDir, 'backend');
+    const backendFiles = [
       'package.json',
       '.env',
       'README.md',
@@ -163,39 +192,77 @@ async function runTest() {
       'src/middleware/auth.js'
     ];
     
-    let allFilesExist = true;
-    
-    for (const file of requiredFiles) {
-      const filePath = path.join(projectDir, file);
+    console.log('\n   Backend files:');
+    let backendComplete = true;
+    for (const file of backendFiles) {
+      const filePath = path.join(backendDir, file);
       try {
         await fs.access(filePath);
-        console.log(`   ✓ ${file}`);
+        console.log(`   ✓ backend/${file}`);
       } catch {
-        console.log(`   ✗ ${file} - MISSING!`);
-        allFilesExist = false;
+        console.log(`   ✗ backend/${file} - MISSING!`);
+        backendComplete = false;
       }
     }
     
-    if (allFilesExist) {
+    // Check frontend directory
+    const frontendDir = path.join(projectDir, 'frontend');
+    const frontendFiles = [
+      'package.json',
+      '.env.local',
+      'README.md',
+      'next.config.ts',
+      'app/layout.tsx',
+      'app/page.tsx',
+      'app/login/page.tsx',
+      'app/register/page.tsx',
+      'app/forgot-password/page.tsx',
+      'app/reset-password/page.tsx',
+      'lib/apiService.ts',
+      'lib/redux/store.ts',
+      'components/layout/ConditionalDashboardLayout.tsx'
+    ];
+    
+    console.log('\n   Frontend files:');
+    let frontendComplete = true;
+    for (const file of frontendFiles) {
+      const filePath = path.join(frontendDir, file);
+      try {
+        await fs.access(filePath);
+        console.log(`   ✓ frontend/${file}`);
+      } catch {
+        console.log(`   ✗ frontend/${file} - MISSING!`);
+        frontendComplete = false;
+      }
+    }
+    
+    if (backendComplete && frontendComplete) {
       console.log('\n✅ All required files exist!');
     } else {
       console.log('\n⚠️  Some files are missing!');
     }
     
-    // Step 4: Verify token replacement
-    console.log('\n🔍 Step 4: Verifying token replacement...\n');
+    // Step 4: Verify configurations
+    console.log('\n🔍 Step 4: Verifying configurations...\n');
     
-    const packageJsonPath = path.join(projectDir, 'package.json');
-    const packageJson = JSON.parse(await fs.readFile(packageJsonPath, 'utf-8'));
+    // Backend package.json
+    const backendPackageJsonPath = path.join(backendDir, 'package.json');
+    const backendPackageJson = JSON.parse(await fs.readFile(backendPackageJsonPath, 'utf-8'));
+    console.log(`   Backend Name: ${backendPackageJson.name}`);
+    console.log(`   Description: ${backendPackageJson.description}`);
     
-    console.log(`   Project Name: ${packageJson.name}`);
-    console.log(`   Description: ${packageJson.description}`);
+    // Frontend package.json
+    const frontendPackageJsonPath = path.join(frontendDir, 'package.json');
+    const frontendPackageJson = JSON.parse(await fs.readFile(frontendPackageJsonPath, 'utf-8'));
+    console.log(`   Frontend Name: ${frontendPackageJson.name}`);
+    console.log(`   Description: ${frontendPackageJson.description}`);
     
-    const envPath = path.join(projectDir, '.env');
+    // Backend .env
+    const envPath = path.join(backendDir, '.env');
     const envContent = await fs.readFile(envPath, 'utf-8');
     
     if (envContent.includes('__')) {
-      console.log('   ⚠️  Warning: Some tokens may not have been replaced!');
+      console.log('\n   ⚠️  Warning: Some tokens may not have been replaced in backend .env!');
       const matches = envContent.match(/__[A-Z_]+__/g);
       if (matches) {
         console.log('   Remaining tokens:', [...new Set(matches)].join(', '));
@@ -206,68 +273,58 @@ async function runTest() {
     
     // Summary
     console.log('\n' + '='.repeat(60));
-    console.log('\n📋 Registration Test Scenarios\n');
-    console.log('The generated backend supports multiple public role registration:\n');
-    console.log('1. DEFAULT ROLE (from config.json):');
-    console.log('   POST /api/auth/register');
-    console.log('   Body: { email, password, firstName?, lastName? }');
-    console.log('   → Assigns default public role (config.defaultPublicRole)\n');
+    console.log('\n📋 Full-Stack Project Summary\n');
+    console.log('✅ Backend + Frontend generated in a single project structure:\n');
+    console.log(`📁 ${projectDir}/`);
+    console.log('   ├── backend/       (Node.js + Express + Prisma)');
+    console.log('   ├── frontend/      (Next.js + TypeScript + Redux)');
+    console.log('   ├── docker-compose.yml');
+    console.log('   └── README.md\n');
     
-    console.log('2. SPECIFIC PUBLIC ROLE (User/Buyer/Seller):');
-    console.log('   POST /api/auth/register');
-    console.log('   Body: { email, password, firstName?, lastName?, role: "Buyer" }');
-    console.log('   → Assigns specified public role\n');
+    console.log('🚀 Quick Start Options:\n');
+    console.log('Option 1: Manual Setup');
+    console.log('   Backend:');
+    console.log('   1. cd backend && npm install');
+    console.log('   2. npx prisma db push');
+    console.log('   3. npm start  (runs on http://localhost:5000)');
+    console.log('\n   Frontend:');
+    console.log('   1. cd frontend && npm install');
+    console.log('   2. npm run dev  (runs on http://localhost:3000)\n');
     
-    console.log('3. WITH USERNAME (optional):');
-    console.log('   POST /api/auth/register');
-    console.log('   Body: { username?, email, password, firstName?, lastName?, role? }');
-    console.log('   → All fields except email/password are optional\n');
+    console.log('Option 2: Docker Compose (One Command)');
+    console.log('   docker-compose up\n');
     
-    console.log('4. INVALID ROLE (Admin - should fail):');
-    console.log('   POST /api/auth/register');
-    console.log('   Body: { email, password, role: "Admin" }');
-    console.log('   → Returns 400 error - Admin is registrationType: "admin"\n');
-    
-    console.log('Available Public Roles:');
-    testConfig.roles
-      .filter(r => r.registrationType === 'public')
-      .forEach(r => console.log(`   • ${r.name}: ${r.description}`));
-    
-    console.log('\n' + '='.repeat(60));
-    console.log('\n🎉 Test Complete!\n');
-    console.log('Next Steps:');
-    console.log('1. Extract the ZIP file');
-    console.log('2. Run: npm install');
-    console.log('3. Run: npm run prisma:push');
-    console.log('4. Run: npm start');
-    console.log('5. Test registration with multiple roles:');
-    console.log(`   Base URL: http://localhost:${testConfig.port}`);
-    console.log('\n   Test Requests (using curl or Postman):');
-    console.log('\n   a) Default role registration:');
-    console.log('      curl -X POST http://localhost:' + testConfig.port + '/api/auth/register \\');
-    console.log('        -H "Content-Type: application/json" \\');
-    console.log('        -d \'{"email":"user1@test.com","password":"Pass123!"}\'');
-    console.log('\n   b) Register as Buyer:');
-    console.log('      curl -X POST http://localhost:' + testConfig.port + '/api/auth/register \\');
-    console.log('        -H "Content-Type: application/json" \\');
-    console.log('        -d \'{"email":"buyer@test.com","password":"Pass123!","role":"Buyer"}\'');
-    console.log('\n   c) Register as Seller:');
-    console.log('      curl -X POST http://localhost:' + testConfig.port + '/api/auth/register \\');
-    console.log('        -H "Content-Type: application/json" \\');
-    console.log('        -d \'{"email":"seller@test.com","password":"Pass123!","role":"Seller"}\'');
-    console.log('\n   d) Get all roles (admin):');
-    console.log('      curl -X GET http://localhost:' + testConfig.port + '/api/admin/roles \\');
-    console.log('        -H "Authorization: Bearer {accessToken}"');
-    console.log('\n   e) Import Postman collection for complete testing:');
-    console.log('      Import: GRIFFION_API.postman_collection.json (in generated project)');
-    console.log('\n6. Login with admin account:');
+    console.log('🔐 Default Admin Credentials:');
     console.log(`   Email: ${testConfig.adminEmail}`);
     console.log(`   Password: ${testConfig.adminPassword}`);
-    console.log('\n' + '='.repeat(60));
+    console.log('   ⚠️  Change these in production!\n');
     
-    // Ask if we should cleanup
-    console.log('\n⚠️  Project directory kept for inspection: ' + projectDir);
-    console.log('To cleanup, run: node -e "require(\'./src/utils/backendGenerator\').cleanup(\'' + projectDir + '\')"');
+    console.log('📋 Available Registration Endpoints:\n');
+    console.log('1. Default Registration (Frontend):');
+    console.log('   http://localhost:3000/register\n');
+    
+    console.log('2. Role-Based Registration (Frontend):');
+    testConfig.roles
+      .filter(r => r.registrationType === 'public')
+      .forEach(r => console.log(`   http://localhost:3000/${r.name.toLowerCase()}/register - ${r.description}`));
+    
+    console.log('\n3. API Endpoints (Backend):');
+    console.log('   POST http://localhost:5000/api/auth/register');
+    console.log('   Body: { email, password, firstName?, lastName?, role? }\n');
+    
+    console.log('📄 Documentation:');
+    console.log('   • Project README: README.md');
+    console.log('   • Backend API: backend/docs/API-GUIDE.md');
+    console.log('   • Frontend Guide: frontend/README.md');
+    console.log('   • Postman Collection: backend/GRIFFION_API.postman_collection.json\n');
+    
+    console.log('=' .repeat(60));
+    console.log('\n🎉 Test Complete!\n');
+    console.log('📦 ZIP file: ' + zipPath);
+    console.log('📁 Project directory: ' + projectDir);
+    console.log('\n⚠️  Project directory kept for inspection');
+    console.log('To cleanup, run: node -e "require(\'./src/utils/fullstackGenerator\').cleanup(\'' + projectDir + '\')"');
+    console.log('\n' + '='.repeat(60));
     
   } catch (error) {
     console.error('\n❌ Test Failed!\n');
