@@ -18,7 +18,7 @@ interface ConfigState {
 
 const initialState: ConfigState = {
   backend: null,
-  theme: 'dark',
+  theme: (process.env.NEXT_PUBLIC_DEFAULT_THEME as 'light' | 'dark') || 'dark',
   sidebarOpen: true,
   loading: false,
 }

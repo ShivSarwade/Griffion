@@ -3,6 +3,10 @@ import * as api from '../apiService'
 import { LoginCredentials, RegisterData } from '../apiService'
 import type { NavItem } from '@/components/layout'
 import { setNavigation, setNavigationLoading, setNavigationError } from './slices/navigationSlice'
+import { validateNavigationItems } from '../componentValidator'
+
+// Enable debug mode to see navigation validation details in console
+const DEBUG_NAVIGATION = process.env.NODE_ENV === 'development'
 
 // Transform backend navigation format to frontend NavItem format
 const transformNavigationTree = (nodes: any[]): NavItem[] => {
@@ -73,8 +77,23 @@ export const fetchNavigation = createAsyncThunk(
       if (response.success && response.data) {
         // Transform backend format to frontend NavItem format
         const transformedData = transformNavigationTree(response.data)
-        dispatch(setNavigation(transformedData))
-        return transformedData
+        
+        if (DEBUG_NAVIGATION) {
+          console.log('🔍 Navigation Validation:')
+          console.log('  Received items:', transformedData.length)
+        }
+        
+        // Validate navigation items - check if components exist
+        // If a component doesn't exist, redirect to default page
+        const validatedData = validateNavigationItems(transformedData, true)
+        
+        if (DEBUG_NAVIGATION) {
+          console.log('  Validated items:', validatedData.length)
+          console.log('✅ Navigation validation complete')
+        }
+        
+        dispatch(setNavigation(validatedData))
+        return validatedData
       }
       dispatch(setNavigationError(response.error || 'Failed to fetch navigation'))
       return rejectWithValue(response.error || 'Failed to fetch navigation')

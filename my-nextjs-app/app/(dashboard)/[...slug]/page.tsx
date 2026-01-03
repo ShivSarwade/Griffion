@@ -1,41 +1,25 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import { useAppSelector } from '@/lib/redux/hooks'
-import { selectIsAuthenticated, selectUser } from '@/lib/redux/slices/authSlice'
 import { selectNavigation } from '@/lib/redux/slices/navigationSlice'
-import { Sidebar, Navbar, type NavItem } from '@/components/layout'
-import { selectTheme, selectSidebarOpen, toggleTheme, toggleSidebar } from '@/lib/redux/slices/configSlice'
-import { useAppDispatch } from '@/lib/redux/hooks'
-import { ChevronRight, FileText } from 'lucide-react'
+import { type NavItem } from '@/components/layout'
+import { FileQuestion, Plus, Code } from 'lucide-react'
 
 /**
  * Dynamic Catch-All Route Handler
  * 
- * This component handles ALL dynamic routes in the app based on the navigation tree.
- * URL-first navigation means the sidebar generates links, and this route renders them.
+ * This component handles all authenticated routes that don't have explicit page components.
+ * It shows a "page doesn't exist" message with instructions to create the page.
  * 
- * Examples:
- * - /users → renders user management page
- * - /settings/profile → renders profile settings
- * - /admin/roles → renders role management
- * 
- * The route checks if a custom component exists for the path. If not, it renders
- * a placeholder indicating the route is ready for custom logic.
+ * The ConditionalDashboardLayout automatically wraps this with Sidebar/Navbar,
+ * so this component only focuses on rendering the content area.
  */
 
 export default function DynamicPage() {
   const params = useParams()
-  const router = useRouter()
-  const dispatch = useAppDispatch()
-
-  // Redux state
-  const isAuthenticated = useAppSelector(selectIsAuthenticated)
-  const user = useAppSelector(selectUser)
   const navTree = useAppSelector(selectNavigation)
-  const isSidebarOpen = useAppSelector(selectSidebarOpen)
-  const theme = useAppSelector(selectTheme)
 
   const [mounted, setMounted] = useState(false)
   const [pageData, setPageData] = useState<{
@@ -55,12 +39,6 @@ export default function DynamicPage() {
   useEffect(() => {
     setMounted(true)
 
-    // Check authentication
-    if (!isAuthenticated) {
-      router.push('/login')
-      return
-    }
-
     // Find the page in navigation tree
     const navItem = findNavItemByPath(navTree || [], fullPath)
     
@@ -74,17 +52,18 @@ export default function DynamicPage() {
       breadcrumbs,
       navItem
     })
-  }, [isAuthenticated, router, fullPath, slug, navTree])
+  }, [fullPath, slug, navTree])
+
+  // If navigation tree is loaded and page is NOT in the navigation tree, show 404
+  const hasNavigationLoaded = navTree && navTree.length > 0
+  const pageNotInNavigation = hasNavigationLoaded && !pageData.navItem
 
   // Build breadcrumbs from navigation tree
   const buildBreadcrumbs = (items: NavItem[], targetPath: string, slugSegments: string[]): string[] => {
-    // Try to find the path in navigation tree first
     const pathParts = findPathToItem(items, targetPath)
     if (pathParts.length > 0) {
       return pathParts
     }
-    
-    // Fallback to formatting slug segments
     return slugSegments.map(s => formatTitle(s))
   }
 
@@ -127,243 +106,137 @@ export default function DynamicPage() {
       .join(' ')
   }
 
-  const handleToggleTheme = () => {
-    dispatch(toggleTheme())
-  }
-
-  const handleToggleSidebar = () => {
-    dispatch(toggleSidebar())
-  }
-
-  if (!mounted || !user) {
+  if (!mounted) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-zinc-950">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600 mx-auto mb-4" />
-          <p className="text-zinc-400">Loading...</p>
+      <div className="flex items-center justify-center h-full">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600" />
+      </div>
+    )
+  }
+
+  // If page is not in user's navigation tree, show 404 Access Denied
+  if (pageNotInNavigation) {
+    return (
+      <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+        <div className="max-w-2xl w-full mx-auto text-center p-8">
+          {/* 404 Icon */}
+          <div className="flex justify-center mb-6">
+            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-red-100 to-pink-100 dark:from-red-900/20 dark:to-pink-900/20 flex items-center justify-center">
+              <FileQuestion size={48} className="text-red-500" />
+            </div>
+          </div>
+
+          {/* 404 Message */}
+          <h1 className="text-6xl font-black mb-3" style={{ color: 'var(--color-foreground)' }}>
+            404
+          </h1>
+          <h2 className="text-2xl font-bold mb-3" style={{ color: 'var(--color-foreground)' }}>
+            Page Not Found
+          </h2>
+          <p className="text-lg mb-8" style={{ color: 'var(--color-muted-foreground)' }}>
+            You don't have access to this page or it doesn't exist.
+          </p>
+
+          {/* Path Info */}
+          <div className="rounded-xl p-4 mb-6" style={{ backgroundColor: 'var(--color-muted)' }}>
+            <p className="text-sm" style={{ color: 'var(--color-muted-foreground)' }}>
+              Requested path: <span className="font-mono font-semibold" style={{ color: 'var(--color-foreground)' }}>{fullPath}</span>
+            </p>
+          </div>
+
+          <p className="text-sm" style={{ color: 'var(--color-muted-foreground)' }}>
+            This page is not available in your navigation menu. Please contact your administrator if you believe you should have access.
+          </p>
         </div>
       </div>
     )
   }
 
+  // Convert path to file path suggestion
+  const suggestedFilePath = `app${fullPath}/page.tsx`
+
+  // Page exists in navigation but no component - show "create page" message
   return (
-    <div className={`min-h-screen flex ${theme === 'dark' ? 'dark' : ''}`} style={{ backgroundColor: 'var(--color-background)', color: 'var(--color-foreground)' }}>
-      <Sidebar 
-        navTree={navTree || []}
-        user={user}
-        isOpen={isSidebarOpen}
-        onClose={handleToggleSidebar}
-      />
-
-      <div className={`flex-1 flex flex-col min-w-0 transition-all ${isSidebarOpen ? 'lg:pl-64' : ''}`}>
-        <Navbar 
-          isSidebarOpen={isSidebarOpen}
-          onToggleSidebar={handleToggleSidebar}
-          theme={theme}
-          onToggleTheme={handleToggleTheme}
-        />
-
-        <main className="flex-1 p-8 md:p-16">
-          <div className="max-w-6xl space-y-8">
-            {/* Breadcrumbs */}
-            <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--color-muted-foreground)' }}>
-              <span className="hover:opacity-80 cursor-pointer transition-opacity" onClick={() => router.push('/dashboard')}>
-                Dashboard
-              </span>
-              {pageData.breadcrumbs.map((crumb, index) => (
-                <React.Fragment key={index}>
-                  <ChevronRight className="h-4 w-4" />
-                  <span 
-                    className="transition-opacity"
-                    style={{
-                      color: index === pageData.breadcrumbs.length - 1 ? 'var(--color-foreground)' : 'var(--color-muted-foreground)',
-                      fontWeight: index === pageData.breadcrumbs.length - 1 ? 500 : 400,
-                      cursor: index < pageData.breadcrumbs.length - 1 ? 'pointer' : 'default',
-                      opacity: index < pageData.breadcrumbs.length - 1 ? 0.8 : 1
-                    }}
-                  >
-                    {crumb}
-                  </span>
-                </React.Fragment>
-              ))}
+    <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+      <div className="max-w-2xl w-full mx-auto text-center p-8">
+        {/* Icon */}
+        <div className="flex justify-center mb-6">
+          <div className="relative">
+            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-orange-100 to-red-100 dark:from-orange-900/20 dark:to-red-900/20 flex items-center justify-center">
+              <FileQuestion size={48} className="text-orange-500" />
             </div>
-
-            {/* Page Title */}
-            <div className="space-y-4">
-              <h1 
-                className="text-5xl md:text-7xl font-black tracking-tighter uppercase italic leading-tight"
-                style={{ color: 'var(--color-foreground)' }}
-              >
-                {pageData.title}
-              </h1>
-              <div className="w-24 h-2 bg-gradient-to-r from-indigo-600 to-indigo-500 rounded-full shadow-lg shadow-indigo-500/30 dark:shadow-indigo-500/20" />
-            </div>
-
-            {/* Page Content */}
-            <div className="space-y-6">
-              {/* Route Information Card */}
-              <div 
-                className="border-2 rounded-xl p-8 space-y-4"
-                style={{
-                  backgroundColor: 'var(--color-card)',
-                  borderColor: 'var(--color-border)'
-                }}
-              >
-                <div className="flex items-start gap-4">
-                  <div className="p-3 bg-indigo-600/10 rounded-lg">
-                    <FileText className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
-                  </div>
-                  <div className="flex-1">
-                    <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--color-foreground)' }}>
-                      Dynamic Route Active
-                    </h2>
-                    <p className="mb-4" style={{ color: 'var(--color-muted-foreground)' }}>
-                      This page is dynamically rendered based on your navigation tree. The route is live and ready for custom logic.
-                    </p>
-                    
-                    <div className="space-y-2 text-sm">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold" style={{ color: 'var(--color-foreground)' }}>Path:</span>
-                        <code 
-                          className="px-2 py-1 rounded font-mono"
-                          style={{
-                            backgroundColor: 'var(--color-muted)',
-                            color: 'var(--brand-primary)'
-                          }}
-                        >
-                          {fullPath}
-                        </code>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold" style={{ color: 'var(--color-foreground)' }}>Route Segments:</span>
-                        <code 
-                          className="px-2 py-1 rounded font-mono"
-                          style={{
-                            backgroundColor: 'var(--color-muted)',
-                            color: 'var(--color-muted-foreground)'
-                          }}
-                        >
-                          {JSON.stringify(slug)}
-                        </code>
-                      </div>
-
-                      {pageData.navItem && (
-                        <>
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold" style={{ color: 'var(--color-foreground)' }}>Icon:</span>
-                            <code 
-                              className="px-2 py-1 rounded font-mono"
-                              style={{
-                                backgroundColor: 'var(--color-muted)',
-                                color: 'var(--color-muted-foreground)'
-                              }}
-                            >
-                              {typeof pageData.navItem.icon === 'string' ? pageData.navItem.icon : 'icon'}
-                            </code>
-                          </div>
-                          
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold" style={{ color: 'var(--color-foreground)' }}>Type:</span>
-                            <code 
-                              className="px-2 py-1 rounded font-mono"
-                              style={{
-                                backgroundColor: 'var(--color-muted)',
-                                color: 'var(--color-muted-foreground)'
-                              }}
-                            >
-                              {pageData.navItem.type}
-                            </code>
-                          </div>
-
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold" style={{ color: 'var(--color-foreground)' }}>Access:</span>
-                            <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                              pageData.navItem.isPublic 
-                                ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                                : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
-                            }`}>
-                              {pageData.navItem.isPublic ? 'Public' : 'Protected'}
-                            </span>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Implementation Instructions */}
-              <div className="bg-indigo-50 dark:bg-indigo-950/30 border-2 border-indigo-200 dark:border-indigo-900 rounded-xl p-8 space-y-4">
-                <h3 className="text-lg font-bold text-indigo-900 dark:text-indigo-100">
-                  🎨 Ready for Custom Implementation
-                </h3>
-                <p className="text-indigo-700 dark:text-indigo-300">
-                  To add custom logic to this page, you can:
-                </p>
-                <ul className="space-y-2 text-indigo-600 dark:text-indigo-400 list-disc list-inside">
-                  <li>Create a specific component at <code className="bg-indigo-100 dark:bg-indigo-900 px-2 py-0.5 rounded text-xs">app/(dashboard){fullPath}/page.tsx</code></li>
-                  <li>Fetch data using the path segments from <code className="bg-indigo-100 dark:bg-indigo-900 px-2 py-0.5 rounded text-xs">params.slug</code></li>
-                  <li>Add CRUD operations, forms, tables, or any custom UI</li>
-                  <li>Use Redux hooks to access user, auth, and config state</li>
-                </ul>
-                <div className="pt-4 border-t border-indigo-200 dark:border-indigo-800">
-                  <p className="text-sm text-indigo-600 dark:text-indigo-400 italic">
-                    💡 This catch-all route ensures every navigation item is accessible immediately, without creating files manually.
-                  </p>
-                </div>
-              </div>
-
-              {/* Quick Stats */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div 
-                  className="border-2 rounded-lg p-6 text-center"
-                  style={{
-                    backgroundColor: 'var(--color-card)',
-                    borderColor: 'var(--color-border)'
-                  }}
-                >
-                  <div className="text-3xl font-black text-indigo-600 dark:text-indigo-400 mb-2">
-                    {slug.length}
-                  </div>
-                  <div className="text-sm font-medium uppercase tracking-wide" style={{ color: 'var(--color-muted-foreground)' }}>
-                    Route Depth
-                  </div>
-                </div>
-
-                <div 
-                  className="border-2 rounded-lg p-6 text-center"
-                  style={{
-                    backgroundColor: 'var(--color-card)',
-                    borderColor: 'var(--color-border)'
-                  }}
-                >
-                  <div className="text-3xl font-black text-indigo-600 dark:text-indigo-400 mb-2">
-                    {navTree?.length || 0}
-                  </div>
-                  <div className="text-sm font-medium uppercase tracking-wide" style={{ color: 'var(--color-muted-foreground)' }}>
-                    Nav Items
-                  </div>
-                </div>
-
-                <div 
-                  className="border-2 rounded-lg p-6 text-center"
-                  style={{
-                    backgroundColor: 'var(--color-card)',
-                    borderColor: 'var(--color-border)'
-                  }}
-                >
-                  <div className="text-3xl font-black text-indigo-600 dark:text-indigo-400 mb-2">
-                    {user?.role || 'User'}
-                  </div>
-                  <div className="text-sm font-medium uppercase tracking-wide" style={{ color: 'var(--color-muted-foreground)' }}>
-                    Your Role
-                  </div>
-                </div>
-              </div>
+            <div className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center shadow-lg">
+              <Plus size={20} className="text-white" />
             </div>
           </div>
-        </main>
+        </div>
+
+        {/* Breadcrumbs */}
+        {pageData.breadcrumbs.length > 0 && (
+          <div className="flex items-center justify-center gap-2 mb-4 text-sm" style={{ color: 'var(--color-muted-foreground)' }}>
+            {pageData.breadcrumbs.map((crumb, i) => (
+              <React.Fragment key={i}>
+                {i > 0 && <span>/</span>}
+                <span>{crumb}</span>
+              </React.Fragment>
+            ))}
+          </div>
+        )}
+
+        {/* Title */}
+        <h1 className="text-4xl font-black mb-3" style={{ color: 'var(--color-foreground)' }}>
+          {pageData.title}
+        </h1>
+
+        {/* Subtitle */}
+        <p className="text-xl mb-8" style={{ color: 'var(--color-muted-foreground)' }}>
+          This page doesn&apos;t exist yet. Create it to add custom content.
+        </p>
+
+        {/* Instructions */}
+        <div className="rounded-xl p-6 text-left mb-6" style={{ backgroundColor: 'var(--color-muted)' }}>
+          <div className="flex items-start gap-3 mb-4">
+            <Code size={20} className="text-indigo-500 mt-1 flex-shrink-0" />
+            <div>
+              <h3 className="font-bold mb-2" style={{ color: 'var(--color-foreground)' }}>
+                To create this page:
+              </h3>
+              <ol className="space-y-2 text-sm" style={{ color: 'var(--color-foreground)' }}>
+                <li>1. Create file: <code className="px-2 py-1 rounded text-xs" style={{ backgroundColor: 'var(--color-background)', color: 'var(--color-foreground)' }}>{suggestedFilePath}</code></li>
+                <li>2. Add your component code</li>
+                <li>3. Refresh the page</li>
+              </ol>
+            </div>
+          </div>
+
+          {/* Example Code */}
+          <div className="mt-4 pt-4 border-t" style={{ borderColor: 'var(--color-border)' }}>
+            <p className="text-xs font-semibold mb-2" style={{ color: 'var(--color-muted-foreground)' }}>Example:</p>
+            <pre className="rounded p-3 text-xs overflow-x-auto" style={{ backgroundColor: 'var(--color-background)', color: 'var(--color-foreground)' }}>
+              <code>{`'use client'
+
+export default function ${formatTitle(pageData.title.replace(/\s+/g, ''))}Page() {
+  return (
+    <div>
+      <h1>${pageData.title}</h1>
+      <p>Your content here...</p>
+    </div>
+  )
+}`}</code>
+            </pre>
+          </div>
+        </div>
+
+        {/* Path Info */}
+        <p className="text-sm" style={{ color: 'var(--color-muted-foreground)' }}>
+          Current path: <span className="font-mono" style={{ color: 'var(--color-foreground)' }}>{fullPath}</span>
+        </p>
+
+        {/* Navigation Status */}
+        <div className="mt-4 inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs" style={{ backgroundColor: 'rgba(34, 197, 94, 0.15)', color: 'rgb(22, 163, 74)', borderWidth: '1px', borderColor: 'rgba(34, 197, 94, 0.3)' }}>
+          <span className="w-2 h-2 rounded-full bg-green-500" />
+          Found in navigation menu - Access granted
+        </div>
       </div>
     </div>
   )

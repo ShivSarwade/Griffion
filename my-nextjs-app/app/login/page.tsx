@@ -368,11 +368,9 @@ export default function LoginPage() {
                 <input type="checkbox" className="rounded" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-muted)' }} />
                 <span>Remember me</span>
               </label>
-              {backendConfig?.enablePasswordRecovery && (
-                <Link href="/forgot-password" className="text-indigo-400 hover:text-indigo-300 font-medium">
-                  Forgot password?
-                </Link>
-              )}
+              <Link href="/forgot-password" className="text-indigo-600 hover:text-indigo-700 font-bold transition-colors">
+                Forgot password?
+              </Link>
             </div>
 
             <button

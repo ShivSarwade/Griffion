@@ -44,7 +44,7 @@ export default function Home() {
   // Always show public landing page
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--color-background)', color: 'var(--color-foreground)' }}>
+    <div className={`min-h-screen ${theme === 'dark' ? 'dark' : ''}`} style={{ backgroundColor: 'var(--color-background)', color: 'var(--color-foreground)' }}>
       {/* Navigation */}
       <nav className="border-b backdrop-blur-xl sticky top-0 z-50" style={{ backgroundColor: 'var(--color-card)', borderColor: 'var(--color-border)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

@@ -13,7 +13,7 @@ export interface ApiResponse<T = any> {
 }
 
 export interface LoginCredentials {
-  email?: string
+   email?: string
   username?: string
   password: string
   totpToken?: string
