@@ -365,7 +365,7 @@ export default function ConfigurePage() {
         defaultTheme: config.defaultTheme,
         
         // Roles - enhance with static properties
-        roles: config.roles.map((role, index) => ({
+        roles: config.roles.map((role: any, index: number) => ({
           name: role.name,
           description: role.description,
           registrationType: role.registrationType,
