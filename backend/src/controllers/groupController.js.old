@@ -1,0 +1,371 @@
+
+const { prisma } = require('../../database/init');
+const { createAuditLog } = require('../utils/auditLog');
+
+/**
+ * Get all groups
+ */
+const getGroups = async (req, res) => {
+  try {
+    const { page = 1, limit = 50, search = '' } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const where = search
+      ? {
+          OR: [
+            { name: { contains: search, mode: 'insensitive' } },
+            { description: { contains: search, mode: 'insensitive' } }
+          ]
+        }
+      : {};
+
+    const [groups, total] = await Promise.all([
+      prisma.group.findMany({
+        where,
+        skip,
+        take: parseInt(limit),
+        orderBy: { createdAt: 'desc' },
+        include: {
+          _count: {
+            select: { members: true }
+          }
+        }
+      }),
+      prisma.group.count({ where })
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        groups: groups.map(g => ({
+          ...g,
+          memberCount: g._count.members
+        })),
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total,
+          totalPages: Math.ceil(total / parseInt(limit))
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Get groups error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+/**
+ * Get group by ID
+ */
+const getGroupById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const db = getDatabase();
+
+    db.get('SELECT * FROM groups WHERE id = ?', [id], (err, group) => {
+      if (err) {
+        return res.status(500).json({ success: false, message: 'Database error' });
+      }
+
+      if (!group) {
+        return res.status(404).json({ success: false, message: 'Group not found' });
+      }
+
+      // Get member count
+      db.get(
+        'SELECT COUNT(*) as memberCount FROM group_members WHERE group_id = ?',
+        [id],
+        (err, countResult) => {
+          if (err) {
+            return res.status(500).json({ success: false, message: 'Database error' });
+          }
+
+          res.json({
+            success: true,
+            data: {
+              ...group,
+              memberCount: countResult.memberCount
+            }
+          });
+        }
+      );
+    });
+  } catch (error) {
+    console.error('Get group error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+/**
+ * Create new group
+ */
+const createGroup = async (req, res) => {
+  try {
+    const { name, description } = req.body;
+    const db = getDatabase();
+
+    if (!name) {
+      return res.status(400).json({ success: false, message: 'Group name is required' });
+    }
+
+    db.run(
+      'INSERT INTO groups (name, description) VALUES (?, ?)',
+      [name, description || null],
+      function(err) {
+        if (err) {
+          return res.status(500).json({ success: false, message: 'Error creating group' });
+        }
+
+        createAuditLog(req.user.id, 'group_created', req.ip, req.get('user-agent'), 'success', {
+          groupId: this.lastID,
+          groupName: name
+        });
+
+        res.status(201).json({
+          success: true,
+          message: 'Group created successfully',
+          data: {
+            id: this.lastID,
+            name,
+            description
+          }
+        });
+      }
+    );
+  } catch (error) {
+    console.error('Create group error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+/**
+ * Update group
+ */
+const updateGroup = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, description } = req.body;
+    const db = getDatabase();
+
+    if (!name) {
+      return res.status(400).json({ success: false, message: 'Group name is required' });
+    }
+
+    db.run(
+      'UPDATE groups SET name = ?, description = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      [name, description || null, id],
+      function(err) {
+        if (err) {
+          return res.status(500).json({ success: false, message: 'Error updating group' });
+        }
+
+        if (this.changes === 0) {
+          return res.status(404).json({ success: false, message: 'Group not found' });
+        }
+
+        createAuditLog(req.user.id, 'group_updated', req.ip, req.get('user-agent'), 'success', {
+          groupId: id,
+          groupName: name
+        });
+
+        res.json({
+          success: true,
+          message: 'Group updated successfully',
+          data: {
+            id,
+            name,
+            description
+          }
+        });
+      }
+    );
+  } catch (error) {
+    console.error('Update group error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+/**
+ * Delete group
+ */
+const deleteGroup = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const db = getDatabase();
+
+    // First, delete all group members
+    db.run('DELETE FROM group_members WHERE group_id = ?', [id], (err) => {
+      if (err) {
+        return res.status(500).json({ success: false, message: 'Error deleting group members' });
+      }
+
+      // Then delete the group
+      db.run('DELETE FROM groups WHERE id = ?', [id], function(err) {
+        if (err) {
+          return res.status(500).json({ success: false, message: 'Error deleting group' });
+        }
+
+        if (this.changes === 0) {
+          return res.status(404).json({ success: false, message: 'Group not found' });
+        }
+
+        createAuditLog(req.user.id, 'group_deleted', req.ip, req.get('user-agent'), 'success', {
+          groupId: id
+        });
+
+        res.json({
+          success: true,
+          message: 'Group deleted successfully'
+        });
+      });
+    });
+  } catch (error) {
+    console.error('Delete group error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+/**
+ * Add member to group
+ */
+const addMember = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { userId } = req.body;
+    const db = getDatabase();
+
+    if (!userId) {
+      return res.status(400).json({ success: false, message: 'User ID is required' });
+    }
+
+    // Check if user exists
+    db.get('SELECT id FROM users WHERE id = ?', [userId], (err, user) => {
+      if (err) {
+        return res.status(500).json({ success: false, message: 'Database error' });
+      }
+
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+      }
+
+      // Check if group exists
+      db.get('SELECT id FROM groups WHERE id = ?', [id], (err, group) => {
+        if (err) {
+          return res.status(500).json({ success: false, message: 'Database error' });
+        }
+
+        if (!group) {
+          return res.status(404).json({ success: false, message: 'Group not found' });
+        }
+
+        // Add member
+        db.run(
+          'INSERT INTO group_members (group_id, user_id) VALUES (?, ?)',
+          [id, userId],
+          function(err) {
+            if (err) {
+              if (err.message.includes('UNIQUE')) {
+                return res.status(400).json({ success: false, message: 'User is already a member' });
+              }
+              return res.status(500).json({ success: false, message: 'Error adding member' });
+            }
+
+            createAuditLog(req.user.id, 'group_member_added', req.ip, req.get('user-agent'), 'success', {
+              groupId: id,
+              userId
+            });
+
+            res.status(201).json({
+              success: true,
+              message: 'Member added successfully'
+            });
+          }
+        );
+      });
+    });
+  } catch (error) {
+    console.error('Add member error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+/**
+ * Remove member from group
+ */
+const removeMember = async (req, res) => {
+  try {
+    const { id, userId } = req.params;
+    const db = getDatabase();
+
+    db.run(
+      'DELETE FROM group_members WHERE group_id = ? AND user_id = ?',
+      [id, userId],
+      function(err) {
+        if (err) {
+          return res.status(500).json({ success: false, message: 'Error removing member' });
+        }
+
+        if (this.changes === 0) {
+          return res.status(404).json({ success: false, message: 'Member not found in group' });
+        }
+
+        createAuditLog(req.user.id, 'group_member_removed', req.ip, req.get('user-agent'), 'success', {
+          groupId: id,
+          userId
+        });
+
+        res.json({
+          success: true,
+          message: 'Member removed successfully'
+        });
+      }
+    );
+  } catch (error) {
+    console.error('Remove member error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+/**
+ * Get group members
+ */
+const getGroupMembers = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const db = getDatabase();
+
+    db.all(
+      `SELECT u.id, u.email, u.username, u.created_at, gm.joined_at
+       FROM users u
+       JOIN group_members gm ON u.id = gm.user_id
+       WHERE gm.group_id = ?
+       ORDER BY gm.joined_at DESC`,
+      [id],
+      (err, members) => {
+        if (err) {
+          return res.status(500).json({ success: false, message: 'Database error' });
+        }
+
+        res.json({
+          success: true,
+          data: members
+        });
+      }
+    );
+  } catch (error) {
+    console.error('Get group members error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+module.exports = {
+  getGroups,
+  getGroupById,
+  createGroup,
+  updateGroup,
+  deleteGroup,
+  addMember,
+  removeMember,
+  getGroupMembers
+};

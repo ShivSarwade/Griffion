@@ -1,0 +1,158 @@
+// Griffion Backend - Prisma Schema
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// User Model
+model User {
+  id            String   @id @default(uuid())
+  email         String?  @unique
+  username      String?  @unique
+  password      String   @map("passwordHash")
+  firstName     String?
+  lastName      String?
+  phone         String?
+  mfaSecret     String?
+  mfaEnabled    Boolean  @default(false)
+  preferences   Json?
+  isActive      Boolean  @default(true)
+  isLocked      Boolean  @default(false)
+  emailVerified Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  lastLogin     DateTime? @map("lastLoginAt")
+  failedLoginAttempts Int @default(0)
+
+  // Relations
+  roleId        String?
+  role          Role?    @relation(fields: [roleId], references: [id])
+  refreshTokens RefreshToken[]
+  auditLogs     AuditLog[]
+  passwordResetTokens PasswordResetToken[]
+  groupMemberships GroupMembership[]
+
+  @@map("users")
+}
+
+// Role Model
+model Role {
+  id              String   @id @default(uuid())
+  name            String   @unique
+  description     String?
+  registrationType String  @default("admin") // "public" or "admin"
+  permissions     Json?    // JSON array of permission strings
+  isSystemRole    Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  users           User[]
+  navigationNodes NavigationNode[]
+
+  @@map("roles")
+}
+
+// Navigation Node Model
+model NavigationNode {
+  id          String   @id @default(uuid())
+  parentId    String?
+  name        String
+  type        String   // "section" or "page"
+  path        String?
+  icon        String?
+  isPublic    Boolean  @default(false)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Self-referential relation
+  parent      NavigationNode?  @relation("NavigationHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children    NavigationNode[] @relation("NavigationHierarchy")
+
+  // Many-to-many with roles
+  accessRoles Role[]
+
+  @@map("navigation_nodes")
+}
+
+// Refresh Token Model
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique @db.VarChar(500)
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  isRevoked Boolean  @default(false)
+  
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+// Audit Log Model
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?
+  action     String   // "USER_LOGIN", "USER_LOGOUT", "USER_REGISTERED", etc.
+  resource   String?  // "User", "Group", "Role", etc.
+  resourceId String?  // ID of the affected resource
+  details    Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  // Relations
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("audit_logs")
+}
+
+// Password Reset Token Model
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  token     String   @unique @db.VarChar(500)
+  userId    String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("password_reset_tokens")
+}
+
+// Group Model
+model Group {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members     GroupMembership[]
+
+  @@map("groups")
+}
+
+// Group Membership (Many-to-Many)
+model GroupMembership {
+  id        String   @id @default(uuid())
+  userId    String
+  groupId   String
+  role      String?  @default("member") // "admin", "member"
+  joinedAt  DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, groupId])
+  @@map("group_memberships")
+}

@@ -1,0 +1,286 @@
+{
+  "info": {
+    "name": "Griffion Full-Stack Generator",
+    "description": "API collection for generating complete full-stack projects (Backend + Frontend) with Griffion",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Full-Stack Generation",
+      "item": [
+        {
+          "name": "Generate Full-Stack Project",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectName\": \"My Awesome App\",\n  \"projectDescription\": \"A complete full-stack application\",\n  \"author\": \"John Doe <john@example.com>\",\n  \"port\": 5000,\n  \"frontendUrl\": \"http://localhost:3000\",\n  \"frontendApiUrl\": \"http://localhost:5000\",\n  \"dbProvider\": \"mysql\",\n  \"primaryIdentifier\": \"email\",\n  \"enable2FA\": true,\n  \"enablePasswordRecovery\": true,\n  \"enableAdminPanel\": true,\n  \"enableRBAC\": true,\n  \"enableGroups\": false,\n  \"enableNavigation\": true,\n  \"adminEmail\": \"admin@example.com\",\n  \"adminPassword\": \"Admin123!\",\n  \"adminFirstName\": \"Admin\",\n  \"adminLastName\": \"User\",\n  \"defaultTheme\": \"dark\",\n  \"defaultRole\": \"User\",\n  \"primaryColor\": \"#6366f1\",\n  \"secondaryColor\": \"#8b5cf6\",\n  \"logoPath\": \"/logo.png\",\n  \"selfRegisterRoles\": \"user,buyer,seller\",\n  \"roles\": [\n    {\n      \"name\": \"Admin\",\n      \"description\": \"System Administrator\",\n      \"registrationType\": \"admin\",\n      \"isSystemRole\": true,\n      \"permissions\": [\"*\"],\n      \"default\": false\n    },\n    {\n      \"name\": \"Manager\",\n      \"description\": \"Department Manager\",\n      \"registrationType\": \"admin\",\n      \"isSystemRole\": false,\n      \"permissions\": [\"users.read\", \"reports.read\"],\n      \"default\": false\n    },\n    {\n      \"name\": \"User\",\n      \"description\": \"Standard User\",\n      \"registrationType\": \"public\",\n      \"isSystemRole\": false,\n      \"permissions\": [\"profile.read\", \"profile.update\"],\n      \"default\": true\n    },\n    {\n      \"name\": \"Buyer\",\n      \"description\": \"Marketplace Buyer\",\n      \"registrationType\": \"public\",\n      \"isSystemRole\": false,\n      \"permissions\": [\"products.read\", \"orders.create\", \"orders.read\"],\n      \"default\": false\n    },\n    {\n      \"name\": \"Seller\",\n      \"description\": \"Marketplace Seller\",\n      \"registrationType\": \"public\",\n      \"isSystemRole\": false,\n      \"permissions\": [\"products.create\", \"products.update\", \"orders.read\"],\n      \"default\": false\n    }\n  ],\n  \"navigationTree\": [\n    {\n      \"id\": \"dashboard\",\n      \"name\": \"Dashboard\",\n      \"type\": \"page\",\n      \"path\": \"/dashboard\",\n      \"icon\": \"dashboard\",\n      \"isPublic\": false,\n      \"order\": 0,\n      \"accessRoles\": [\"Admin\", \"Manager\", \"User\"]\n    },\n    {\n      \"id\": \"admin_section\",\n      \"name\": \"Administration\",\n      \"type\": \"section\",\n      \"icon\": \"settings\",\n      \"isPublic\": false,\n      \"order\": 1,\n      \"accessRoles\": [\"Admin\", \"Manager\"],\n      \"children\": [\n        {\n          \"id\": \"users\",\n          \"name\": \"Users\",\n          \"type\": \"page\",\n          \"path\": \"/admin/users\",\n          \"icon\": \"users\",\n          \"isPublic\": false,\n          \"order\": 0,\n          \"accessRoles\": [\"Admin\", \"Manager\"]\n        },\n        {\n          \"id\": \"audit_logs\",\n          \"name\": \"Audit Logs\",\n          \"type\": \"page\",\n          \"path\": \"/admin/logs\",\n          \"icon\": \"file-text\",\n          \"isPublic\": false,\n          \"order\": 1,\n          \"accessRoles\": [\"Admin\"]\n        }\n      ]\n    },\n    {\n      \"id\": \"marketplace_section\",\n      \"name\": \"Marketplace\",\n      \"type\": \"section\",\n      \"icon\": \"shopping-cart\",\n      \"isPublic\": false,\n      \"order\": 2,\n      \"accessRoles\": [\"Buyer\", \"Seller\"],\n      \"children\": [\n        {\n          \"id\": \"products\",\n          \"name\": \"Products\",\n          \"type\": \"page\",\n          \"path\": \"/marketplace/products\",\n          \"icon\": \"package\",\n          \"isPublic\": false,\n          \"order\": 0,\n          \"accessRoles\": [\"Buyer\", \"Seller\"]\n        },\n        {\n          \"id\": \"orders\",\n          \"name\": \"Orders\",\n          \"type\": \"page\",\n          \"path\": \"/marketplace/orders\",\n          \"icon\": \"shopping-bag\",\n          \"isPublic\": false,\n          \"order\": 1,\n          \"accessRoles\": [\"Buyer\", \"Seller\"]\n        }\n      ]\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/download/generate-fullstack",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "download", "generate-fullstack"]
+            },
+            "description": "Generates a complete full-stack project with backend (Node.js + Express + Prisma) and frontend (Next.js + TypeScript + Redux) in a single ZIP file.\n\n**Project Structure:**\n```\nproject-{timestamp}/\n├── backend/          # Complete Node.js backend\n├── frontend/         # Complete Next.js frontend\n├── docker-compose.yml\n└── README.md\n```\n\n**Configuration Options:**\n\n**Project Info:**\n- `projectName`: Project name (used for package.json)\n- `projectDescription`: Project description\n- `author`: Author name and email\n- `port`: Backend server port (default: 5000)\n- `frontendUrl`: Frontend URL for CORS (default: http://localhost:3000)\n- `frontendApiUrl`: Backend API URL for frontend (default: http://localhost:5000)\n\n**Database:**\n- `dbProvider`: Database provider - \"mysql\", \"postgresql\", or \"mongodb\"\n\n**Authentication:**\n- `primaryIdentifier`: Login identifier - \"email\", \"username\", or \"both\"\n- `enable2FA`: Enable two-factor authentication\n- `enablePasswordRecovery`: Enable password recovery flow\n\n**Features:**\n- `enableAdminPanel`: Include admin routes and controllers\n- `enableRBAC`: Enable role-based access control\n- `enableGroups`: Enable user groups feature\n- `enableNavigation`: Enable dynamic navigation system\n\n**Admin User:**\n- `adminEmail`: Default admin email\n- `adminPassword`: Default admin password\n- `adminFirstName`: Admin first name\n- `adminLastName`: Admin last name\n\n**Frontend Configuration:**\n- `defaultTheme`: Default theme - \"light\" or \"dark\"\n- `defaultRole`: Default public role for registration\n- `primaryColor`: Primary brand color (hex)\n- `secondaryColor`: Secondary brand color (hex)\n- `logoPath`: Logo path relative to public folder\n- `selfRegisterRoles`: Comma-separated list of roles for self-registration\n\n**Roles:**\nArray of role objects with:\n- `name`: Role name\n- `description`: Role description\n- `registrationType`: \"admin\" or \"public\"\n- `isSystemRole`: Boolean\n- `permissions`: Array of permission strings\n- `default`: Set one role as default (for public roles)\n\n**Navigation Tree:**\nArray of navigation nodes with:\n- `id`: Unique identifier\n- `name`: Display name\n- `type`: \"page\" or \"section\"\n- `path`: Route path (for pages)\n- `icon`: Icon name (lucide-react icons)\n- `isPublic`: Boolean\n- `order`: Display order\n- `accessRoles`: Array of role names\n- `children`: Array of child nodes (for sections)\n\n**Response:**\nDownloads a ZIP file containing the complete project structure."
+          },
+          "response": [
+            {
+              "name": "Success - Download ZIP",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"projectName\": \"Test App\",\n  \"port\": 5000,\n  \"dbProvider\": \"mysql\",\n  \"enable2FA\": true,\n  \"roles\": [...],\n  \"navigationTree\": [...]\n}"
+                },
+                "url": {
+                  "raw": "http://localhost:5000/api/download/generate-fullstack",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "5000",
+                  "path": ["api", "download", "generate-fullstack"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/zip"
+                },
+                {
+                  "key": "Content-Disposition",
+                  "value": "attachment; filename=griffion-fullstack.zip"
+                }
+              ],
+              "cookie": [],
+              "body": "Binary ZIP file containing:\n- backend/ folder with complete Node.js backend\n- frontend/ folder with complete Next.js frontend\n- docker-compose.yml for easy deployment\n- README.md with setup instructions"
+            },
+            {
+              "name": "Error - Invalid Configuration",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"projectName\": \"Test\"\n}"
+                },
+                "url": {
+                  "raw": "http://localhost:5000/api/download/generate-fullstack",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "5000",
+                  "path": ["api", "download", "generate-fullstack"]
+                }
+              },
+              "status": "Internal Server Error",
+              "code": 500,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Error generating full-stack project\",\n  \"error\": \"Roles array is required\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Generate Backend Only",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectName\": \"My Backend\",\n  \"projectDescription\": \"Backend API\",\n  \"author\": \"John Doe\",\n  \"port\": 5000,\n  \"frontendUrl\": \"http://localhost:3000\",\n  \"dbProvider\": \"mysql\",\n  \"primaryIdentifier\": \"email\",\n  \"enable2FA\": true,\n  \"enablePasswordRecovery\": true,\n  \"enableAdminPanel\": true,\n  \"enableRBAC\": true,\n  \"enableGroups\": false,\n  \"enableNavigation\": true,\n  \"adminEmail\": \"admin@example.com\",\n  \"adminPassword\": \"Admin123!\",\n  \"adminFirstName\": \"Admin\",\n  \"adminLastName\": \"User\",\n  \"roles\": [\n    {\n      \"name\": \"Admin\",\n      \"description\": \"Administrator\",\n      \"registrationType\": \"admin\",\n      \"isSystemRole\": true,\n      \"permissions\": [\"*\"],\n      \"default\": false\n    },\n    {\n      \"name\": \"User\",\n      \"description\": \"Standard User\",\n      \"registrationType\": \"public\",\n      \"isSystemRole\": false,\n      \"permissions\": [\"profile.read\"],\n      \"default\": true\n    }\n  ],\n  \"navigationTree\": [\n    {\n      \"id\": \"dashboard\",\n      \"name\": \"Dashboard\",\n      \"type\": \"page\",\n      \"path\": \"/dashboard\",\n      \"icon\": \"dashboard\",\n      \"isPublic\": false,\n      \"order\": 0,\n      \"accessRoles\": [\"Admin\", \"User\"]\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/download/generate",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "download", "generate"]
+            },
+            "description": "Generates backend only (Node.js + Express + Prisma). Downloads a ZIP file with the complete backend project."
+          },
+          "response": []
+        },
+        {
+          "name": "Generate Frontend Only",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectName\": \"my-frontend\",\n  \"appName\": \"My Application\",\n  \"apiUrl\": \"http://localhost:5000\",\n  \"author\": \"John Doe <john@example.com>\",\n  \"defaultTheme\": \"dark\",\n  \"defaultRole\": \"User\",\n  \"primaryColor\": \"#6366f1\",\n  \"secondaryColor\": \"#8b5cf6\",\n  \"logoPath\": \"/logo.png\",\n  \"primaryIdentifier\": \"email\",\n  \"selfRegisterRoles\": \"user,buyer,seller\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/download/generate-frontend",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "download", "generate-frontend"]
+            },
+            "description": "Generates frontend only (Next.js + TypeScript + Redux). Downloads a ZIP file with the complete frontend project.\n\n**Configuration:**\n- `projectName`: Package name (kebab-case)\n- `appName`: Application display name\n- `apiUrl`: Backend API URL\n- `author`: Author info\n- `defaultTheme`: \"light\" or \"dark\"\n- `defaultRole`: Default role for registration\n- `primaryColor`: Primary brand color (hex)\n- `secondaryColor`: Secondary brand color (hex)\n- `logoPath`: Logo file path\n- `primaryIdentifier`: \"email\", \"username\", or \"both\"\n- `selfRegisterRoles`: Comma-separated role list"
+          },
+          "response": []
+        },
+        {
+          "name": "Preview Configuration",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectName\": \"Test App\",\n  \"enable2FA\": true,\n  \"enablePasswordRecovery\": true,\n  \"enableAdminPanel\": true,\n  \"enableRBAC\": true,\n  \"enableGroups\": false,\n  \"database\": \"mysql\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/download/preview",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "download", "preview"]
+            },
+            "description": "Preview the configuration without generating files. Returns information about what will be included in the generated project."
+          },
+          "response": [
+            {
+              "name": "Preview Response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"enable2FA\": true,\n  \"enablePasswordRecovery\": true,\n  \"enableAdminPanel\": true,\n  \"enableRBAC\": true,\n  \"enableGroups\": false,\n  \"database\": \"mysql\"\n}"
+                },
+                "url": {
+                  "raw": "http://localhost:5000/api/download/preview",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "5000",
+                  "path": ["api", "download", "preview"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"features\": {\n      \"2fa\": true,\n      \"password_recovery\": true,\n      \"admin_panel\": true,\n      \"rbac\": true,\n      \"groups\": false\n    },\n    \"database\": \"mysql\",\n    \"estimatedSize\": \"~2-5 MB\",\n    \"filesIncluded\": [\n      \"package.json\",\n      \".env\",\n      \"README.md\",\n      \"src/server.js\",\n      \"src/routes/\",\n      \"src/controllers/\",\n      \"src/middleware/\",\n      \"src/database/\",\n      \"src/utils/\"\n    ]\n  }\n}"
+            }
+          ]
+        }
+      ],
+      "description": "Endpoints for generating Griffion projects"
+    },
+    {
+      "name": "Examples",
+      "item": [
+        {
+          "name": "Minimal Configuration",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectName\": \"Simple App\",\n  \"port\": 5000,\n  \"dbProvider\": \"mysql\",\n  \"adminEmail\": \"admin@test.com\",\n  \"adminPassword\": \"Admin123!\",\n  \"roles\": [\n    {\n      \"name\": \"Admin\",\n      \"registrationType\": \"admin\",\n      \"permissions\": [\"*\"],\n      \"default\": false\n    },\n    {\n      \"name\": \"User\",\n      \"registrationType\": \"public\",\n      \"permissions\": [\"profile.read\"],\n      \"default\": true\n    }\n  ],\n  \"navigationTree\": [\n    {\n      \"id\": \"dashboard\",\n      \"name\": \"Dashboard\",\n      \"type\": \"page\",\n      \"path\": \"/dashboard\",\n      \"icon\": \"home\",\n      \"isPublic\": false,\n      \"order\": 0,\n      \"accessRoles\": [\"Admin\", \"User\"]\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/download/generate-fullstack",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "download", "generate-fullstack"]
+            },
+            "description": "Minimal configuration with just the required fields"
+          },
+          "response": []
+        },
+        {
+          "name": "E-commerce Configuration",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectName\": \"E-Commerce Platform\",\n  \"projectDescription\": \"Online marketplace for buyers and sellers\",\n  \"port\": 5000,\n  \"dbProvider\": \"mysql\",\n  \"enable2FA\": true,\n  \"enablePasswordRecovery\": true,\n  \"adminEmail\": \"admin@ecommerce.com\",\n  \"adminPassword\": \"SecureAdmin123!\",\n  \"defaultTheme\": \"light\",\n  \"primaryColor\": \"#10b981\",\n  \"secondaryColor\": \"#3b82f6\",\n  \"roles\": [\n    {\n      \"name\": \"Admin\",\n      \"description\": \"Platform Administrator\",\n      \"registrationType\": \"admin\",\n      \"permissions\": [\"*\"],\n      \"default\": false\n    },\n    {\n      \"name\": \"Buyer\",\n      \"description\": \"Product Buyer\",\n      \"registrationType\": \"public\",\n      \"permissions\": [\"products.read\", \"cart.manage\", \"orders.create\"],\n      \"default\": true\n    },\n    {\n      \"name\": \"Seller\",\n      \"description\": \"Product Seller\",\n      \"registrationType\": \"public\",\n      \"permissions\": [\"products.manage\", \"orders.view\", \"analytics.read\"],\n      \"default\": false\n    }\n  ],\n  \"navigationTree\": [\n    {\n      \"id\": \"marketplace\",\n      \"name\": \"Marketplace\",\n      \"type\": \"page\",\n      \"path\": \"/marketplace\",\n      \"icon\": \"shopping-bag\",\n      \"isPublic\": false,\n      \"order\": 0,\n      \"accessRoles\": [\"Buyer\", \"Seller\"]\n    },\n    {\n      \"id\": \"seller_section\",\n      \"name\": \"Seller Dashboard\",\n      \"type\": \"section\",\n      \"icon\": \"store\",\n      \"isPublic\": false,\n      \"order\": 1,\n      \"accessRoles\": [\"Seller\"],\n      \"children\": [\n        {\n          \"id\": \"my_products\",\n          \"name\": \"My Products\",\n          \"type\": \"page\",\n          \"path\": \"/seller/products\",\n          \"icon\": \"package\",\n          \"isPublic\": false,\n          \"order\": 0,\n          \"accessRoles\": [\"Seller\"]\n        },\n        {\n          \"id\": \"sales\",\n          \"name\": \"Sales\",\n          \"type\": \"page\",\n          \"path\": \"/seller/sales\",\n          \"icon\": \"trending-up\",\n          \"isPublic\": false,\n          \"order\": 1,\n          \"accessRoles\": [\"Seller\"]\n        }\n      ]\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/download/generate-fullstack",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "download", "generate-fullstack"]
+            },
+            "description": "E-commerce platform with buyer and seller roles"
+          },
+          "response": []
+        }
+      ],
+      "description": "Example configurations for different use cases"
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    }
+  ]
+}

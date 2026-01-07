@@ -1,0 +1,247 @@
+{
+  "info": {
+    "_postman_id": "ae0a9b8b-6768-4e0e-82f1-public-registration",
+    "name": "Griffion - Public Registration Examples",
+    "description": "Examples showing how public registration works with single or multiple public roles",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Registration Examples",
+      "item": [
+        {
+          "name": "1. Register with Default Public Role",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john@example.com\",\n  \"password\": \"SecurePass123!\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Register user WITHOUT specifying role.\nSystem auto-assigns first available public role.\n\nExample:\n- If roles are [Buyer, Seller] ordered by name\n- User gets assigned: Buyer (first alphabetically)\n\nUseful for:\n- Simple single-role apps\n- Default role assignment"
+          },
+          "response": []
+        },
+        {
+          "name": "2. Register as Buyer (Public Role)",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"buyer1@marketplace.com\",\n  \"password\": \"SecurePass123!\",\n  \"firstName\": \"Jane\",\n  \"lastName\": \"Buyer\",\n  \"role\": \"Buyer\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Register user WITH specific role parameter.\nSystem verifies role is public type.\nIf public: registration succeeds with that role.\n\nRequired:\n- Role must exist in database\n- Role must have registrationType = 'public'\n\nExample Setup:\n- Role: Buyer (registrationType: public)\n- User registers: Jane → Gets Buyer role\n\nUseeful for:\n- Marketplace apps (Buyer vs Seller)\n- Multi-role SaaS (Customer vs Free vs Premium)\n- Choice-based signup"
+          },
+          "response": []
+        },
+        {
+          "name": "3. Register as Seller (Public Role)",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"seller1@marketplace.com\",\n  \"password\": \"SecurePass123!\",\n  \"firstName\": \"Bob\",\n  \"lastName\": \"Seller\",\n  \"role\": \"Seller\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Another example: Register as different public role.\n\nScenario:\n- Marketplace has 2 public roles\n- Users can choose which to register as\n- Buyer: browsing/purchasing permissions\n- Seller: listing/inventory permissions\n\nEach gets different capabilities based on role permissions."
+          },
+          "response": []
+        },
+        {
+          "name": "4. Try to Register as Admin (FAILS - Not Public)",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"hacker@example.com\",\n  \"password\": \"SecurePass123!\",\n  \"firstName\": \"Hacker\",\n  \"role\": \"Admin\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "ATTEMPT to register with admin-only role.\n\nResult: 400 Error\nMessage: Role \"Admin\" is not available for self-registration\n\nWhy?\n- Admin role has registrationType = 'admin'\n- Only 'public' roles allow self-registration\n- Only admins can create admin/staff users\n\nThis ensures security - users can't give themselves admin access."
+          },
+          "response": []
+        },
+        {
+          "name": "5. Get Available Public Roles (For Signup Form)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/roles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "roles"
+              ]
+            },
+            "description": "Get all available roles to populate signup form.\n\nResponse includes:\n- id: Role ID\n- name: Role name (Buyer, Seller, etc)\n- registrationType: 'public', 'admin', or 'custom'\n- description: What this role does\n- permissions: Array of granted permissions\n\nFrontend Usage:\n1. Call this endpoint\n2. Filter for registrationType = 'public'\n3. Build dropdown: Buyer, Seller, Guest, etc\n4. User picks one\n5. Send registration request with chosen role\n\nNote: Admin/custom roles won't appear in public signup dropdown (different registrationType)."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Database Setup Examples",
+      "item": [
+        {
+          "name": "Database Roles Configuration",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://example.com",
+              "protocol": "https",
+              "host": [
+                "example.com"
+              ]
+            },
+            "description": "### How to set up public roles in database:\n\n```sql\n-- Example: Marketplace with 2 public roles\nINSERT INTO Role (name, registrationType, description) VALUES\n('Buyer', 'public', 'Can browse and purchase items'),\n('Seller', 'public', 'Can list and sell items'),\n('Manager', 'admin', 'Platform manager - admin only'),\n('Admin', 'admin', 'System administrator');\n\n-- Verify:\nSELECT name, registrationType FROM Role WHERE registrationType = 'public';\n-- Returns: Buyer, Seller (these are available for self-signup)\n\n-- When user registers with role='Seller':\n-- System checks: WHERE name='Seller' AND registrationType='public'\n-- Found: ✓ Registration succeeds\n\n-- When user registers with role='Manager':\n-- System checks: WHERE name='Manager' AND registrationType='public'\n-- Not found: ✗ Returns 400 error\n```\n\n### Single Public Role (Simple Apps)\n\n```sql\nINSERT INTO Role (name, registrationType) VALUES\n('User', 'public');\n\n-- All users self-register as 'User'\n-- No role selection needed\n-- Frontend: Don't show role dropdown\n```\n\n### Complex Setup (Enterprise)\n\n```sql\n-- Public: Only guests can self-signup\nINSERT INTO Role (name, registrationType) VALUES\n('Guest', 'public');\n\n-- Admin only: Company assigns these\nINSERT INTO Role (name, registrationType) VALUES\n('Employee', 'admin'),\n('Manager', 'admin'),\n('Executive', 'admin');\n\n-- User flow:\n-- 1. Guest self-registers via public role\n-- 2. Admin upgrades Guest → Employee\n-- 3. Admin can create direct as Manager/Executive\n```"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Frontend Integration Code",
+      "item": [
+        {
+          "name": "Frontend Code Examples",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://example.com",
+              "protocol": "https",
+              "host": [
+                "example.com"
+              ]
+            },
+            "description": "### Option 1: No Role Selection (Simple)\n\n```html\n<!-- Single signup form, no role choice -->\n<form onsubmit=\"handleRegister(event)\">\n  <input type=\"email\" id=\"email\" required />\n  <input type=\"password\" id=\"password\" required />\n  <button type=\"submit\">Sign Up</button>\n</form>\n\n<script>\nasync function handleRegister(event) {\n  event.preventDefault();\n  const response = await fetch('/api/auth/register', {\n    method: 'POST',\n    headers: { 'Content-Type': 'application/json' },\n    body: JSON.stringify({\n      email: document.getElementById('email').value,\n      password: document.getElementById('password').value\n      // No role specified = auto-assign first public role\n    })\n  });\n  const result = await response.json();\n  console.log('Registered as role:', result.data.role);\n}\n</script>\n```\n\n---\n\n### Option 2: Role Selection Dropdown\n\n```html\n<!-- Dynamic dropdown populated from /api/admin/roles -->\n<form onsubmit=\"handleRegisterWithRole(event)\">\n  <input type=\"email\" id=\"email\" required />\n  <input type=\"password\" id=\"password\" required />\n  \n  <label>I want to be a:</label>\n  <select id=\"role\" required>\n    <option value=\"\">-- Select Role --</option>\n    <!-- Populated by JavaScript -->\n  </select>\n  \n  <button type=\"submit\">Sign Up</button>\n</form>\n\n<script>\n// Load available public roles\nasync function loadPublicRoles() {\n  const response = await fetch('/api/admin/roles');\n  const result = await response.json();\n  \n  const publicRoles = result.data.filter(r => r.registrationType === 'public');\n  const dropdown = document.getElementById('role');\n  \n  publicRoles.forEach(role => {\n    const option = document.createElement('option');\n    option.value = role.name;\n    option.textContent = `${role.name} - ${role.description}`;\n    dropdown.appendChild(option);\n  });\n}\n\nasync function handleRegisterWithRole(event) {\n  event.preventDefault();\n  const response = await fetch('/api/auth/register', {\n    method: 'POST',\n    headers: { 'Content-Type': 'application/json' },\n    body: JSON.stringify({\n      email: document.getElementById('email').value,\n      password: document.getElementById('password').value,\n      role: document.getElementById('role').value  // User-selected role\n    })\n  });\n  \n  const result = await response.json();\n  if (result.success) {\n    console.log('Registered as:', result.data.role);\n    // Redirect to login\n  } else {\n    alert('Error: ' + result.message);\n  }\n}\n\n// Load on page load\nwindow.addEventListener('load', loadPublicRoles);\n</script>\n```\n\n---\n\n### Option 3: Conditional Role Selection\n\n```html\n<!-- Show role dropdown only if public roles exist -->\n<form onsubmit=\"handleRegister(event)\">\n  <input type=\"email\" id=\"email\" required />\n  <input type=\"password\" id=\"password\" required />\n  \n  <div id=\"roleSelector\"></div>\n  \n  <button type=\"submit\">Sign Up</button>\n</form>\n\n<script>\nasync function setupForm() {\n  const response = await fetch('/api/admin/roles');\n  const result = await response.json();\n  const publicRoles = result.data.filter(r => r.registrationType === 'public');\n  \n  if (publicRoles.length === 1) {\n    // Only 1 public role - auto-select, hide dropdown\n    document.getElementById('roleSelector').innerHTML = \n      `<p>You will be registered as: <strong>${publicRoles[0].name}</strong></p>`;\n  } else if (publicRoles.length > 1) {\n    // Multiple public roles - show dropdown\n    let html = '<label>Select your role:</label><select id=\"role\" required>';\n    publicRoles.forEach(role => {\n      html += `<option value=\"${role.name}\">${role.name} - ${role.description}</option>`;\n    });\n    html += '</select>';\n    document.getElementById('roleSelector').innerHTML = html;\n  }\n}\n\nasync function handleRegister(event) {\n  event.preventDefault();\n  const roleElement = document.getElementById('role');\n  const payload = {\n    email: document.getElementById('email').value,\n    password: document.getElementById('password').value\n  };\n  \n  if (roleElement) {\n    payload.role = roleElement.value;\n  }\n  \n  const response = await fetch('/api/auth/register', {\n    method: 'POST',\n    headers: { 'Content-Type': 'application/json' },\n    body: JSON.stringify(payload)\n  });\n  \n  const result = await response.json();\n  if (result.success) {\n    console.log('Registered as:', result.data.role);\n  }\n}\n\nwindow.addEventListener('load', setupForm);\n</script>\n```"
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

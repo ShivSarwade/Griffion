@@ -1,0 +1,29 @@
+{
+  "app": {
+    "name": "Griffion",
+    "version": "1.0.0"
+  },
+  "registration": {
+    "defaultPublicRole": "User",
+    "allowMultiplePublicRoles": true,
+    "requireEmailVerification": false
+  },
+  "auth": {
+    "passwordPolicy": {
+      "minLength": 8,
+      "requireUppercase": true,
+      "requireNumbers": true,
+      "requireSpecialChars": true
+    },
+    "tokenExpiry": {
+      "accessToken": "15m",
+      "refreshToken": "7d",
+      "passwordReset": "1h"
+    }
+  },
+  "email": {
+    "sendWelcomeEmail": true,
+    "sendAccountCreatedEmail": true,
+    "sendPasswordResetEmail": true
+  }
+}

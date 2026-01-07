@@ -1,135 +1,213 @@
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
-const fs = require('fs');
+// Griffion Backend - Database Initialization
+const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 
-let db = null;
+const prisma = new PrismaClient({
+  log: ['error', 'warn'],
+});
 
-const initializeDatabase = () => {
-  return new Promise((resolve, reject) => {
-    const dbPath = process.env.DB_PATH || './data/auth.db';
-    const dbDir = path.dirname(dbPath);
+async function initializeDatabase() {
+  try {
+    console.log('📦 Initializing database...');
+    
+    // Test connection
+    await prisma.$connect();
+    console.log('✅ Database connected');
 
-    // Create data directory if it doesn't exist
-    if (!fs.existsSync(dbDir)) {
-      fs.mkdirSync(dbDir, { recursive: true });
+    // Check if seeding is needed
+    const userCount = await prisma.user.count();
+    
+    if (userCount === 0) {
+      console.log('🌱 Running initial seed...');
+      await seedDatabase();
+    } else {
+      console.log(`📊 Database already seeded (${userCount} users found)`);
     }
 
-    db = new sqlite3.Database(dbPath, (err) => {
-      if (err) {
-        reject(err);
-        return;
-      }
-
-      console.log('Connected to SQLite database');
-
-      // Create tables
-      db.serialize(() => {
-        // Users table
-        db.run(`
-          CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            email TEXT UNIQUE NOT NULL,
-            password TEXT NOT NULL,
-            role TEXT DEFAULT 'user',
-            is_active INTEGER DEFAULT 1,
-            is_locked INTEGER DEFAULT 0,
-            failed_login_attempts INTEGER DEFAULT 0,
-            last_login DATETIME,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-          )
-        `);
-
-        // Tokens table
-        db.run(`
-          CREATE TABLE IF NOT EXISTS tokens (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
-            token_hash TEXT NOT NULL,
-            type TEXT NOT NULL,
-            expires_at DATETIME NOT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users (id)
-          )
-        `);
-
-        // Audit log table
-        db.run(`
-          CREATE TABLE IF NOT EXISTS audit_log (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            action TEXT NOT NULL,
-            ip_address TEXT,
-            user_agent TEXT,
-            status TEXT NOT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users (id)
-          )
-        `);
-
-        // Roles table (if RBAC enabled)
-        if (process.env.ENABLE_RBAC === 'true') {
-          db.run(`
-            CREATE TABLE IF NOT EXISTS roles (
-              id INTEGER PRIMARY KEY AUTOINCREMENT,
-              name TEXT UNIQUE NOT NULL,
-              permissions TEXT,
-              description TEXT,
-              created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-          `);
-        }
-
-        // Groups table (if groups enabled)
-        if (process.env.ENABLE_GROUPS === 'true') {
-          db.run(`
-            CREATE TABLE IF NOT EXISTS groups (
-              id INTEGER PRIMARY KEY AUTOINCREMENT,
-              name TEXT UNIQUE NOT NULL,
-              description TEXT,
-              created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-          `);
-
-          db.run(`
-            CREATE TABLE IF NOT EXISTS user_groups (
-              user_id INTEGER NOT NULL,
-              group_id INTEGER NOT NULL,
-              PRIMARY KEY (user_id, group_id),
-              FOREIGN KEY (user_id) REFERENCES users (id),
-              FOREIGN KEY (group_id) REFERENCES groups (id)
-            )
-          `);
-        }
-
-        // Create default admin user
-        const adminPassword = bcrypt.hashSync('Admin123!', parseInt(process.env.BCRYPT_ROUNDS) || 10);
-        
-        db.run(`
-          INSERT OR IGNORE INTO users (email, password, role)
-          VALUES (?, ?, ?)
-        `, ['admin@griffion.local', adminPassword, 'admin'], (err) => {
-          if (err) {
-            console.error('Error creating admin user:', err);
-          } else {
-            console.log('✓ Default admin user created');
-          }
-          resolve();
-        });
-      });
-    });
-  });
-};
-
-const getDatabase = () => {
-  if (!db) {
-    throw new Error('Database not initialized');
+    return prisma;
+  } catch (error) {
+    console.error('❌ Database initialization failed:', error);
+    throw error;
   }
-  return db;
-};
+}
+
+async function seedDatabase() {
+  try {
+    // Seed Roles
+    console.log('  📝 Creating roles...');
+    
+    const adminRole = await prisma.role.create({
+      data: {
+        name: 'Admin',
+        description: 'System Administrator',
+        registrationType: 'admin',
+        isSystemRole: true,
+        permissions: JSON.stringify(['*'])
+      }
+    });
+
+    const managerRole = await prisma.role.create({
+      data: {
+        name: 'Manager',
+        description: 'Department Manager',
+        registrationType: 'admin',
+        isSystemRole: false,
+        permissions: JSON.stringify(['users.read', 'reports.read'])
+      }
+    });
+
+    const userRole = await prisma.role.create({
+      data: {
+        name: 'User',
+        description: 'Standard User',
+        registrationType: 'public',
+        isSystemRole: false,
+        permissions: JSON.stringify(['profile.read', 'profile.update'])
+      }
+    });
+
+    const buyerRole = await prisma.role.create({
+      data: {
+        name: 'Buyer',
+        description: 'Marketplace Buyer',
+        registrationType: 'public',
+        isSystemRole: false,
+        permissions: JSON.stringify(['products.read', 'orders.create', 'orders.read'])
+      }
+    });
+
+    const sellerRole = await prisma.role.create({
+      data: {
+        name: 'Seller',
+        description: 'Marketplace Seller',
+        registrationType: 'public',
+        isSystemRole: false,
+        permissions: JSON.stringify(['products.create', 'products.update', 'orders.read'])
+      }
+    });
+
+    // Seed Navigation Nodes
+    console.log('  🗺️  Creating navigation nodes...');
+
+    const dashboard = await prisma.navigationNode.create({
+      data: {
+        name: 'Dashboard',
+        type: 'page',
+        path: '/dashboard',
+        icon: 'dashboard',
+        isPublic: false,
+        order: 0,
+        accessRoles: {
+          connect: [
+            { id: adminRole.id },
+            { id: managerRole.id },
+            { id: userRole.id }
+          ]
+        }
+      }
+    });
+
+    const adminSection = await prisma.navigationNode.create({
+      data: {
+        name: 'Administration',
+        type: 'section',
+        icon: 'settings',
+        isPublic: false,
+        order: 1,
+        accessRoles: {
+          connect: [
+            { id: adminRole.id },
+            { id: managerRole.id }
+          ]
+        }
+      }
+    });
+
+    const usersPage = await prisma.navigationNode.create({
+      data: {
+        name: 'Users',
+        type: 'page',
+        path: '/admin/users',
+        icon: 'users',
+        isPublic: false,
+        order: 0,
+        parentId: adminSection.id,
+        accessRoles: {
+          connect: [
+            { id: adminRole.id },
+            { id: managerRole.id }
+          ]
+        }
+      }
+    });
+
+    const auditLogs = await prisma.navigationNode.create({
+      data: {
+        name: 'Audit Logs',
+        type: 'page',
+        path: '/admin/logs',
+        icon: 'file-text',
+        isPublic: false,
+        order: 1,
+        parentId: adminSection.id,
+        accessRoles: {
+          connect: [
+            { id: adminRole.id }
+          ]
+        }
+      }
+    });
+
+    // Seed Admin User
+    console.log('  👤 Creating admin user...');
+    
+    // Use the first admin role created (adminRole) or find by name as fallback
+    let selectedAdminRole = adminRole;
+    if (!selectedAdminRole) {
+      selectedAdminRole = await prisma.role.findFirst({
+        where: { 
+          OR: [
+            { name: 'Admin' },
+            { registrationType: 'admin' }
+          ]
+        }
+      });
+    }
+
+    if (!selectedAdminRole) {
+      throw new Error('No admin role available. Cannot create admin user.');
+    }
+
+    const hashedPassword = await bcrypt.hash('Admin123!', 12);
+    
+    const adminData = {
+      email: 'admin@griffion.local',
+      password: hashedPassword,
+      firstName: 'System',
+      lastName: 'Administrator',
+      emailVerified: true,
+      mfaEnabled: false,
+      roleId: selectedAdminRole.id
+    };
+    
+    await prisma.user.create({ data: adminData });
+
+    console.log('✅ Database seeded successfully');
+    console.log('   - 5 Roles created');
+    console.log('   - 4 Navigation nodes created with role assignments');
+    console.log('   - 1 Admin user created');
+  } catch (error) {
+    console.error('❌ Seeding failed:', error);
+    throw error;
+  }
+}
+
+async function closeDatabase() {
+  await prisma.$disconnect();
+}
 
 module.exports = {
+  prisma,
   initializeDatabase,
-  getDatabase
+  closeDatabase
 };

@@ -7,6 +7,9 @@ require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
 const adminRoutes = require('./routes/admin');
+const navigationRoutes = require('./routes/navigation');
+const usersRoutes = require('./routes/users');
+const groupsRoutes = require('./routes/groups');
 const downloadRoutes = require('./routes/download');
 const { errorHandler } = require('./middleware/errorHandler');
 const { initializeDatabase } = require('./database/init');
@@ -31,6 +34,9 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/navigation', navigationRoutes);
+app.use('/api/users', usersRoutes);
+app.use('/api/groups', groupsRoutes);
 app.use('/api/download', downloadRoutes);
 
 // Health check
@@ -41,8 +47,9 @@ app.get('/api/health', (req, res) => {
     features: {
       '2fa': process.env.ENABLE_2FA === 'true',
       'admin_panel': process.env.ENABLE_ADMIN_PANEL === 'true',
-      'rbac': process.env.ENABLE_RBAC === 'true',
-      'groups': process.env.ENABLE_GROUPS === 'true'
+      'navigation': process.env.ENABLE_NAVIGATION === 'true',
+      'groups': process.env.ENABLE_GROUPS === 'true',
+      'password_recovery': process.env.ENABLE_PASSWORD_RECOVERY === 'true'
     }
   });
 });
@@ -61,7 +68,6 @@ initializeDatabase()
       console.log('');
       console.log(`  Server running on: http://localhost:${PORT}`);
       console.log(`  Environment: ${process.env.NODE_ENV}`);
-      console.log(`  Database: ${process.env.DB_TYPE}`);
       console.log('');
       console.log('  API Endpoints:');
       console.log('  - POST /api/auth/register');
