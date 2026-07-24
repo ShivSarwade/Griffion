@@ -1,7 +1,7 @@
 # Griffion API Test Script - Complete Postman Collection Test
 # Run with: .\test-api.ps1
 
-$baseUrl = "http://localhost:5000"
+$baseUrl = "http://localhost:8080"
 $accessToken = ""
 $refreshToken = ""
 $userId = ""
