@@ -51,12 +51,26 @@ async function generateBackend(config) {
     const prismaDir = path.join(projectDir, 'prisma');
     await fs.mkdir(prismaDir, { recursive: true });
     
-    const schemaPath = path.join(projectDir, 'schema.prisma');
+    const schemaSqlPath = path.join(projectDir, 'schema.sql.prisma');
+    const schemaMongoPath = path.join(projectDir, 'schema.mongodb.prisma');
     const prismaSchemaPath = path.join(prismaDir, 'schema.prisma');
     
-    if (await fileExists(schemaPath)) {
-      await fs.rename(schemaPath, prismaSchemaPath);
-      console.log('   ✓ Prisma schema moved to prisma/');
+    if (config.dbProvider === 'mongodb') {
+      if (await fileExists(schemaMongoPath)) {
+        await fs.rename(schemaMongoPath, prismaSchemaPath);
+      }
+      if (await fileExists(schemaSqlPath)) {
+        await fs.unlink(schemaSqlPath);
+      }
+      console.log('   ✓ MongoDB Prisma schema configured');
+    } else {
+      if (await fileExists(schemaSqlPath)) {
+        await fs.rename(schemaSqlPath, prismaSchemaPath);
+      }
+      if (await fileExists(schemaMongoPath)) {
+        await fs.unlink(schemaMongoPath);
+      }
+      console.log('   ✓ SQL Prisma schema configured');
     }
     
     // Step 6: Create .gitignore and other meta files

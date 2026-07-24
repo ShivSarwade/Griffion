@@ -59,32 +59,32 @@ app.use(errorHandler);
 
 // Initialize database and start server
 initializeDatabase()
-  .then(() => {
+  .catch((error) => {
+    console.warn('');
+    console.warn('⚠️  WARNING: Database connection failed (DATABASE_URL may be missing or invalid).');
+    console.warn('   The template API routes (/api/auth, /api/users) will NOT work.');
+    console.warn('   However, the Generator endpoints (/api/download/generate) WILL still work!');
+    console.warn('');
+  })
+  .finally(() => {
     app.listen(PORT, () => {
       console.log('');
       console.log('═══════════════════════════════════════════════════');
-      console.log('  🛡️  Griffion Authentication Service Started  🛡️');
+      console.log('  🛡️  Griffion Generator & API Service Started  🛡️');
       console.log('═══════════════════════════════════════════════════');
       console.log('');
       console.log(`  Server running on: http://localhost:${PORT}`);
       console.log(`  Environment: ${process.env.NODE_ENV}`);
       console.log('');
-      console.log('  API Endpoints:');
+      console.log('  Generator Endpoints (No DB Required):');
+      console.log('  - POST /api/download/generate-fullstack');
+      console.log('');
+      console.log('  API Endpoints (DB Required):');
       console.log('  - POST /api/auth/register');
       console.log('  - POST /api/auth/login');
-      console.log('  - POST /api/auth/logout');
-      console.log('  - GET  /api/health');
-      console.log('');
-      console.log('  Admin Credentials:');
-      console.log('  Email: admin@griffion.local');
-      console.log('  Password: Admin123!');
       console.log('');
       console.log('═══════════════════════════════════════════════════');
     });
-  })
-  .catch((error) => {
-    console.error('Failed to initialize database:', error);
-    process.exit(1);
   });
 
 module.exports = app;
