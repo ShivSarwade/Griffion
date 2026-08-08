@@ -380,7 +380,8 @@ export default function ConfigurePage() {
       };
       
       // Step 1: Call the API to generate full-stack project
-      const response = await fetch('http://localhost:5000/api/download/generate-fullstack', {
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${API_BASE_URL}/api/download/generate-fullstack`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
