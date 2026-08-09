@@ -35,7 +35,17 @@ async function generateFullStack(config) {
     
     // Move backend to project/backend
     const backendDir = path.join(projectDir, 'backend');
-    await fs.rename(backendTempDir, backendDir);
+    try {
+      await fs.rename(backendTempDir, backendDir);
+    } catch (err) {
+      if (err.code === 'EPERM' || err.code === 'EBUSY') {
+        // Fallback to cp + rm for Windows antivirus file locks
+        await fs.cp(backendTempDir, backendDir, { recursive: true });
+        await fs.rm(backendTempDir, { recursive: true, force: true });
+      } else {
+        throw err;
+      }
+    }
     console.log(`✅ Backend moved to: ${backendDir}`);
     
     // Step 2: Generate Frontend
@@ -60,7 +70,16 @@ async function generateFullStack(config) {
     
     // Move frontend to project/frontend
     const frontendDir = path.join(projectDir, 'frontend');
-    await fs.rename(frontendTempDir, frontendDir);
+    try {
+      await fs.rename(frontendTempDir, frontendDir);
+    } catch (err) {
+      if (err.code === 'EPERM' || err.code === 'EBUSY') {
+        await fs.cp(frontendTempDir, frontendDir, { recursive: true });
+        await fs.rm(frontendTempDir, { recursive: true, force: true });
+      } else {
+        throw err;
+      }
+    }
     console.log(`✅ Frontend moved to: ${frontendDir}`);
     
     // Step 3: Create project-level README

@@ -1,8 +1,8 @@
-// Griffion Backend Template - Prisma Schema
+// Griffion Backend Template - Prisma Schema (MongoDB)
 // Tokens will be replaced during generation
 
 datasource db {
-  provider = "__DB_PROVIDER__"
+  provider = "mongodb"
   url      = env("DATABASE_URL")
 }
 
@@ -12,7 +12,7 @@ generator client {
 
 // User Model
 model User {
-  id            String   @id @default(uuid()) __MONGODB_ID_MAP__
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
   email         String?  @unique
   username      String?  @unique
   password      String   @map("passwordHash")
@@ -21,7 +21,7 @@ model User {
   phone         String?
   mfaSecret     String?
   mfaEnabled    Boolean  @default(false)
-  preferences   __JSON_TYPE__?
+  preferences   Json?
   isActive      Boolean  @default(true)
   isLocked      Boolean  @default(false)
   emailVerified Boolean  @default(false)
@@ -31,7 +31,7 @@ model User {
   failedLoginAttempts Int @default(0)
 
   // Relations
-  roleId        String?
+  roleId        String?  @db.ObjectId
   role          Role?    @relation(fields: [roleId], references: [id])
   refreshTokens RefreshToken[]
   auditLogs     AuditLog[]
@@ -43,26 +43,27 @@ model User {
 
 // Role Model
 model Role {
-  id              String   @id @default(uuid()) __MONGODB_ID_MAP__
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
   name            String   @unique
   description     String?
   registrationType String  @default("admin") // "public" or "admin"
-  permissions     __JSON_TYPE__?    // JSON array of permission strings
+  permissions     Json?    // JSON array of permission strings
   isSystemRole    Boolean  @default(false)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   // Relations
   users           User[]
-  navigationNodes NavigationNode[]
+  navigationNodeIds String[] @db.ObjectId
+  navigationNodes NavigationNode[] @relation(fields: [navigationNodeIds], references: [id])
 
   @@map("roles")
 }
 
 // Navigation Node Model
 model NavigationNode {
-  id          String   @id @default(uuid()) __MONGODB_ID_MAP__
-  parentId    String?
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  parentId    String?  @db.ObjectId
   name        String
   type        String   // "section" or "page"
   path        String?
@@ -73,20 +74,21 @@ model NavigationNode {
   updatedAt   DateTime @updatedAt
 
   // Self-referential relation
-  parent      NavigationNode?  @relation("NavigationHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  parent      NavigationNode?  @relation("NavigationHierarchy", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   children    NavigationNode[] @relation("NavigationHierarchy")
 
   // Many-to-many with roles
-  accessRoles Role[]
+  roleIds     String[] @db.ObjectId
+  accessRoles Role[]   @relation(fields: [roleIds], references: [id])
 
   @@map("navigation_nodes")
 }
 
 // Refresh Token Model
 model RefreshToken {
-  id        String   @id @default(uuid()) __MONGODB_ID_MAP__
-  token     String   @unique @db.VarChar(500)
-  userId    String
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  token     String   @unique
+  userId    String   @db.ObjectId
   expiresAt DateTime
   createdAt DateTime @default(now())
   isRevoked Boolean  @default(false)
@@ -99,12 +101,12 @@ model RefreshToken {
 
 // Audit Log Model
 model AuditLog {
-  id         String   @id @default(uuid()) __MONGODB_ID_MAP__
-  userId     String?
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String?  @db.ObjectId
   action     String   // "USER_LOGIN", "USER_LOGOUT", "USER_REGISTERED", etc.
   resource   String?  // "User", "Group", "Role", etc.
   resourceId String?  // ID of the affected resource
-  details    __JSON_TYPE__?
+  details    Json?
   ipAddress  String?
   userAgent  String?
   createdAt  DateTime @default(now())
@@ -117,9 +119,9 @@ model AuditLog {
 
 // Password Reset Token Model
 model PasswordResetToken {
-  id        String   @id @default(uuid()) __MONGODB_ID_MAP__
-  token     String   @unique @db.VarChar(500)
-  userId    String
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  token     String   @unique
+  userId    String   @db.ObjectId
   expiresAt DateTime
   usedAt    DateTime?
   createdAt DateTime @default(now())

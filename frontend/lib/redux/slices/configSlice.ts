@@ -29,7 +29,7 @@ export interface ConfigState {
   enable2FA: boolean;
   
   // Database
-  dbProvider: 'mysql' | 'mongodb';
+  dbProvider: 'mysql' | 'mongodb' | 'postgresql';
   
   // Preferences
   defaultTheme: 'light' | 'dark';
@@ -151,7 +151,7 @@ const configSlice = createSlice({
     toggle2FA: (state) => {
       state.enable2FA = !state.enable2FA;
     },
-    setDbProvider: (state, action: PayloadAction<'mysql' | 'mongodb'>) => {
+    setDbProvider: (state, action: PayloadAction<'mysql' | 'mongodb' | 'postgresql'>) => {
       state.dbProvider = action.payload;
     },
     setDefaultTheme: (state, action: PayloadAction<'light' | 'dark'>) => {

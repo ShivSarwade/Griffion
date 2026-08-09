@@ -22,6 +22,11 @@ function buildDatabaseUrl(config) {
     return `mysql://${dbUser}:${dbPassword}@${dbHost}:${dbPort || 3306}/${dbName}`;
   }
   
+  if (dbProvider === 'postgresql' || dbProvider === 'postgres') {
+    const { dbHost, dbPort, dbName, dbUser, dbPassword } = config;
+    return `postgresql://${dbUser}:${dbPassword}@${dbHost}:${dbPort || 5432}/${dbName}`;
+  }
+  
   if (dbProvider === 'mongodb') {
     const { dbHost, dbPort, dbName, dbUser, dbPassword } = config;
     if (dbUser && dbPassword) {
@@ -91,12 +96,7 @@ function buildTokenMap(config) {
     '__DEFAULT_ADMIN_ROLE__': config.roles && config.roles.length > 0 ? config.roles[0].name : 'Admin'
   };
 
-  // MongoDB-specific tokens
-  if (config.dbProvider === 'mongodb') {
-    tokens['__MONGODB_ID_MAP__'] = '@map("_id") @db.ObjectId';
-  } else {
-    tokens['__MONGODB_ID_MAP__'] = '';
-  }
+  // MongoDB-specific tokens removed as we now use separate schema templates
 
   // Conditional imports and route registrations
   if (config.enableAdminPanel) {
@@ -164,6 +164,8 @@ EMAIL_FROM=${projectSlug}@yourapp.com`;
 
   // README dynamic sections
   tokens['__DB_PROVIDER_NAME__'] = config.dbProvider === 'mysql' ? 'MySQL' :
+                                    config.dbProvider === 'postgresql' ? 'PostgreSQL' :
+                                    config.dbProvider === 'postgres' ? 'PostgreSQL' :
                                     config.dbProvider === 'mongodb' ? 'MongoDB' : 'MySQL';
 
   if (config.enablePasswordRecovery) {
@@ -248,10 +250,11 @@ Since password recovery is enabled, email must be configured:
   // Groups model and relation
   if (config.enableGroups) {
     tokens['__GROUP_RELATION__'] = `groupMemberships GroupMembership[]`;
-    tokens['__GROUP_MODEL__'] = `
+    if (config.dbProvider === 'mongodb') {
+      tokens['__GROUP_MODEL__'] = `
 // Group Model
 model Group {
-  id          String   @id @default(uuid()) ${tokens['__MONGODB_ID_MAP__']}
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
   name        String   @unique
   description String?
   createdAt   DateTime @default(now())
@@ -264,9 +267,9 @@ model Group {
 
 // Group Membership (Many-to-Many)
 model GroupMembership {
-  id        String   @id @default(uuid()) ${tokens['__MONGODB_ID_MAP__']}
-  userId    String
-  groupId   String
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  groupId   String   @db.ObjectId
   role      String?  @default("member") // "admin", "member"
   joinedAt  DateTime @default(now())
 
@@ -276,6 +279,36 @@ model GroupMembership {
   @@unique([userId, groupId])
   @@map("group_memberships")
 }`;
+    } else {
+      tokens['__GROUP_MODEL__'] = `
+// Group Model
+model Group {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members     GroupMembership[]
+
+  @@map("groups")
+}
+
+// Group Membership (Many-to-Many)
+model GroupMembership {
+  id        String   @id @default(uuid())
+  userId    String   
+  groupId   String   
+  role      String?  @default("member") // "admin", "member"
+  joinedAt  DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, groupId])
+  @@map("group_memberships")
+}`;
+    }
   } else {
     tokens['__GROUP_RELATION__'] = '';
     tokens['__GROUP_MODEL__'] = '';

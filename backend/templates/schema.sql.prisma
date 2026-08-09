@@ -1,7 +1,8 @@
-// Griffion Backend - Prisma Schema
+// Griffion Backend Template - Prisma Schema (SQL)
+// Tokens will be replaced during generation
 
 datasource db {
-  provider = "postgresql"
+  provider = "__DB_PROVIDER__"
   url      = env("DATABASE_URL")
 }
 
@@ -35,7 +36,7 @@ model User {
   refreshTokens RefreshToken[]
   auditLogs     AuditLog[]
   passwordResetTokens PasswordResetToken[]
-  groupMemberships GroupMembership[]
+  __GROUP_RELATION__
 
   @@map("users")
 }
@@ -129,30 +130,4 @@ model PasswordResetToken {
   @@map("password_reset_tokens")
 }
 
-// Group Model
-model Group {
-  id          String   @id @default(uuid())
-  name        String   @unique
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  members     GroupMembership[]
-
-  @@map("groups")
-}
-
-// Group Membership (Many-to-Many)
-model GroupMembership {
-  id        String   @id @default(uuid())
-  userId    String
-  groupId   String
-  role      String?  @default("member") // "admin", "member"
-  joinedAt  DateTime @default(now())
-
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, groupId])
-  @@map("group_memberships")
-}
+__GROUP_MODEL__

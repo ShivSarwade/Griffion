@@ -22,7 +22,7 @@ async function generateFrontend(config) {
   console.log('📋 Configuration:', JSON.stringify(config, null, 2));
   
   const backendRoot = path.join(__dirname, '../..');
-  const templateDir = path.join(backendRoot, '..', 'my-nextjs-app'); // Use the working my-nextjs-app
+  const templateDir = path.join(backendRoot, 'templates', 'my-nextjs-app'); // Use the working my-nextjs-app
   const projectDir = path.join(backendRoot, 'temp', `frontend-${Date.now()}`);
   
   try {

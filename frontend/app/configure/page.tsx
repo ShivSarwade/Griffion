@@ -380,7 +380,8 @@ export default function ConfigurePage() {
       };
       
       // Step 1: Call the API to generate full-stack project
-      const response = await fetch('http://localhost:5000/api/download/generate-fullstack', {
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${API_BASE_URL}/api/download/generate-fullstack`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -401,7 +402,7 @@ export default function ConfigurePage() {
       }
       
       // Step 2: Download the ZIP file using the downloadUrl
-      const downloadUrl = `http://localhost:5000${result.data.downloadUrl}`;
+      const downloadUrl = `${API_BASE_URL}${result.data.downloadUrl}`;
       
       // Trigger download
       const link = document.createElement('a');
@@ -631,7 +632,7 @@ export default function ConfigurePage() {
               <p className="text-zinc-500 mt-2 text-xs font-bold uppercase tracking-widest">Database selection and user experience defaults.</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div 
                 onClick={() => dispatch(setDbProvider('mysql'))}
                 className={`p-6 border-2 rounded-xl transition-all cursor-pointer ${config.dbProvider === 'mysql' ? 'border-indigo-600 bg-indigo-50/50 dark:bg-indigo-900/20' : 'border-zinc-200 dark:border-zinc-800'}`}
@@ -652,6 +653,17 @@ export default function ConfigurePage() {
                 </div>
                 <h3 className="font-bold text-lg mb-1 flex items-center">MongoDB</h3>
                 <p className="text-sm text-zinc-600 dark:text-zinc-400">Storing preferences in a nested <strong>object</strong>.</p>
+              </div>
+
+              <div 
+                onClick={() => dispatch(setDbProvider('postgresql'))}
+                className={`p-6 border-2 rounded-xl transition-all cursor-pointer ${config.dbProvider === 'postgresql' ? 'border-indigo-600 bg-indigo-50/50 dark:bg-indigo-900/20' : 'border-zinc-200 dark:border-zinc-800'}`}
+              >
+                <div className="p-2 bg-blue-600 text-white rounded-lg w-fit mb-4">
+                  <Database size={24} />
+                </div>
+                <h3 className="font-bold text-lg mb-1 flex items-center">PostgreSQL</h3>
+                <p className="text-sm text-zinc-600 dark:text-zinc-400">Storing preferences in a <strong>JSONB column</strong>.</p>
               </div>
             </div>
 
