@@ -21,7 +21,7 @@ if (-Not (Test-Path $CollectionFile)) {
 }
 
 # Run newman
-newman run $CollectionFile -r cli,htmlextra --reporter-htmlextra-export $ReportFile
+newman run $CollectionFile -r "cli,htmlextra" --reporter-htmlextra-export $ReportFile
 
 Write-Host "`n[3/3] Done!" -ForegroundColor Yellow
 if (Test-Path $ReportFile) {

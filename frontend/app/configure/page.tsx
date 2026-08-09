@@ -402,7 +402,7 @@ export default function ConfigurePage() {
       }
       
       // Step 2: Download the ZIP file using the downloadUrl
-      const downloadUrl = `http://localhost:5000${result.data.downloadUrl}`;
+      const downloadUrl = `${API_BASE_URL}/${result.data.downloadUrl}`;
       
       // Trigger download
       const link = document.createElement('a');
